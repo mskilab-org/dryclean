@@ -8,28 +8,28 @@ wash_cycle(m.vec, L.burnin, S.burnin, r, N, U.hat, V.hat, sigma.hat,
   lambda1 = NA, lambda2 = NA, decomp = FALSE, verbose = TRUE)
 }
 \arguments{
-\item{m.vec}{vector of GC corrected coverage values of sample under question}
+\item{m.vec}{numeric vector of length m. Vector of GC corrected coverage data of sample in question}
 
-\item{L.burnin}{L matrix of panel of normals after batch rPCA decomposition}
+\item{L.burnin}{(m  markers x n samples) numeric matrix. L matrix of panel of normals after batch rPCA decomposition}
 
-\item{S.burnin}{S matrix of panel of normals after batch rPCA decomposition}
+\item{S.burnin}{(m  markers x n samples) numeric matrix. S matrix of panel of normals after batch rPCA decomposition}
 
-\item{r}{estimated rank of panel of normals after batch rPCA decomposition}
+\item{r}{integer. Estimated rank of panel of normals after batch rPCA decomposition}
 
-\item{N}{matrix of GC corrected coverage data of panel of normals for batch rPCA decomposition}
+\item{N}{(m  markers x n samples) numeric matrix. Matrix of GC corrected coverage data of panel of normals for batch rPCA decomposition}
 
-\item{U.hat}{Right singular matrix of L.burnin}
+\item{U.hat}{(m  markers x n samples) numeric matrix. Right singular matrix of L.burnin}
 
-\item{V.hat}{left singular matrix of L.burnin}
+\item{V.hat}{(m  markers x n samples) numeric matrix. Left singular matrix of L.burnin}
 
-\item{sigma.hat}{singular values of L.burnin}
+\item{sigma.hat}{numeric vector of length r. Singular values of L.burnin}
 
-\item{lambda1, }{lambda2 tuning parameters}
+\item{lambda1, }{lambda2 integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))}
 
-\item{decomp}{if TRUE, carry batch rPCA decomposition on N matrix}
+\item{decomp}{boolean (default = FALSE). If TRUE, carry batch rPCA decomposition on N matrix}
 }
 \value{
-S and L vectors for sample in question
+S and L numeric vectors each of length m. Vectors for sample in question
 }
 \description{
 Function that calls the online rPCA on sample under question and updates subspace

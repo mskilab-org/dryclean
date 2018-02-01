@@ -8,13 +8,13 @@
 apg_project(m.vec, U, lambda1, lambda2)
 }
 \arguments{
-\item{m.vec}{vector of GC corrected coverage data of sample in question}
+\item{m.vec}{numeric vector of length m. Vector of GC corrected coverage data of sample in question}
 
-\item{U}{the basis of low rank subspace}
+\item{U}{(m  markers x n samples) numeric matrix. The basis of low rank subspace. The dimensions are same as burnin matrix}
 
-\item{lambda1}{tuning parameter}
+\item{lambda1}{integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))}
 
-\item{lambda2}{tuning parameter}
+\item{lambda2}{integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))}
 }
 \value{
 list with s and v vectors

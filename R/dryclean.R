@@ -16,9 +16,9 @@
 #' @description Internal shrinkage function for values in S vector:
 #' y = sgn(x)max(|x| - mu, 0)
 #' @keywords internal
-#' @param x vector to which shrinkage is to applied
-#' @param mu shrinkage parameter
-#' @return regularized vector y
+#' @param x numeric vector of length == number of markers in the sample. Vector to which shrinkage is to be applied.
+#' @param mu integer. Shrinkage parameter to use (default = lambda2 = 1/(sqrt(no. of markers in input vector)))
+#' @return numeric vector. Regularized vector y
 #' @author Aditya Deshpande
 
 thresh = function(x, mu){
@@ -37,10 +37,10 @@ thresh = function(x, mu){
 #' solving projection by Accelerated Proximal Gradient
 #' min_{v, s} 0.5*|m-Uv-s|_2^2 + 0.5*lambda1*|v|^2 + lambda2*|s|_1
 #' @keywords internal
-#' @param m.vec vector of GC corrected coverage data of sample in question
-#' @param U the basis of low rank subspace
-#' @param lambda1 tuning parameter
-#' @param lambda2 tuning parameter
+#' @param m.vec numeric vector of length m. Vector of GC corrected coverage data of sample in question
+#' @param U (m  markers x n samples) numeric matrix. The basis of low rank subspace. The dimensions are same as burnin matrix
+#' @param lambda1 integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))
+#' @param lambda2 integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))
 #' @return list with s and v vectors 
 #' @author Aditya Deshpande
 
@@ -58,7 +58,6 @@ apg_project = function(m.vec, U, lambda1, lambda2){
         k =  k + 1
         ### message("on ", k)
         v.old = v
-        ### v = (crossprod(U) + lambda1*I)/(crossprod(U, (m.vec - s))
         v = UUt %*% (m.vec - s)
         s.old = s
         s = thresh(m.vec - (U %*% v), lambda2)
@@ -81,11 +80,11 @@ apg_project = function(m.vec, U, lambda1, lambda2){
 #' projecting sample in question by warm restart
 #'
 #' @keywords internal
-#' @param U the basis of low rank subspace to be updated
-#' @param lambda1 tuning parameter
-#' @param A, B matrices to uodate subspace basis 
+#' @param U (m  markers x n samples) numeric matrix. The basis of low rank subspace. The dimensions are same as burnin matrix
+#' @param lambda1 integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))
+#' @param A, B m x n numeric matrices. Matrices to update subspace basis 
 #' 
-#' @return updated basis U of subspace
+#' @return U (m  markers x n samples) numeric matrix. updated basis U of subspace
 #' @author Aditya Deshpande
 
 update_cols = function(U, A, B, lambda1){
@@ -111,18 +110,18 @@ update_cols = function(U, A, B, lambda1){
 #' basis and does decomposition 
 #'
 #' 
-#' @param m.vec vector of GC corrected coverage values of sample under question
-#' @param lambda1, lambda2 tuning parameters
-#' @param L.burnin L matrix of panel of normals after batch rPCA decomposition 
-#' @param S.burnin S matrix of panel of normals after batch rPCA decomposition 
-#' @param r estimated rank of panel of normals after batch rPCA decomposition
-#' @param N matrix of GC corrected coverage data of panel of normals for batch rPCA decomposition
-#' @param U.hat Right singular matrix of L.burnin
-#' @param V.hat left singular matrix of L.burnin
-#' @param sigma.hat singular values of L.burnin 
-#' @param decomp if TRUE, carry batch rPCA decomposition on N matrix
+#' @param m.vec numeric vector of length m. Vector of GC corrected coverage data of sample in question
+#' @param lambda1, lambda2 integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))
+#' @param L.burnin (m  markers x n samples) numeric matrix. L matrix of panel of normals after batch rPCA decomposition 
+#' @param S.burnin (m  markers x n samples) numeric matrix. S matrix of panel of normals after batch rPCA decomposition 
+#' @param r integer. Estimated rank of panel of normals after batch rPCA decomposition
+#' @param N (m  markers x n samples) numeric matrix. Matrix of GC corrected coverage data of panel of normals for batch rPCA decomposition
+#' @param U.hat (m  markers x n samples) numeric matrix. Right singular matrix of L.burnin
+#' @param V.hat (m  markers x n samples) numeric matrix. Left singular matrix of L.burnin
+#' @param sigma.hat numeric vector of length r. Singular values of L.burnin 
+#' @param decomp boolean (default = FALSE). If TRUE, carry batch rPCA decomposition on N matrix
 #' @export
-#' @return S and L vectors for sample in question
+#' @return S and L numeric vectors each of length m. Vectors for sample in question
 #' @author Aditya Deshpande
 
 wash_cycle = function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat, lambda1 = NA, lambda2 = NA, decomp = FALSE, verbose = TRUE){
@@ -185,8 +184,8 @@ wash_cycle = function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat,
 #'
 #' 
 #' @keywords internal
-#' @param m.vec GRanges object containing GC corrected reads as a cloumn in metadata
-#' @return matrix with processed coverage data
+#' @param m.vec GRanges object. GRanges containing GC corrected reads as a cloumn in metadata
+#' @return vector of length m with processed coverage data
 #' @author Aditya Deshpande
 
 prep_cov = function(m.vec = m.vec){
@@ -209,20 +208,20 @@ prep_cov = function(m.vec = m.vec){
 #' @description function begins the online rPCA process and parallelizes the chromosmes for speed.  
 #' It is the wrapper that takes in GRanges and outputs GRanges with decomposition 
 #' 
-#' @param cov GRanges containig the GC corrected cov data outputed from fragCounter. Needs metadata with header "reads.corrected"
-#' @param mc.cores number of cores to use for parallelization
-#' @param burnin.samples.path path to burnin samples for each chromosome
-#' @param whole_genome for processing chromosome or whole genome
-#' @param chr if a single chromosome is to be processed, name of chromosome
+#' @param cov GRanges object containig the GC corrected cov data outputed from fragCounter. Needs metadata with header "reads.corrected"
+#' @param mc.cores interger. Number of cores to use for parallelization
+#' @param burnin.samples.path string. Path to burnin samples for each chromosome
+#' @param whole_genome boolean (default = TRUE). For processing chromosome or whole genome
+#' @param chr string. if a single chromosome is to be processed, name of chromosome. Requires whole_genome = FALSE
 #' @export
-#' @return GRange with decomposition
+#' @return GRange object with decomposition
 #' @author Aditya Deshpande
 
 start_wash_cycle = function(cov, mc.cores = 1, burnin.samples.path = NA, verbose = TRUE, chr = NA, whole_genome = TRUE){
     if (whole_genome == TRUE){
         chr.nm = c(as.character(1:22), "X", "Y")}
     else {chr.nm = chr}
-    print(chr.nm)
+    ##print(chr.nm)
     chr.list = mclapply(chr.nm, function(x){
         if(verbose == TRUE){
             message("Loading burnins")}

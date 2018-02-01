@@ -7,14 +7,14 @@
 update_cols(U, A, B, lambda1)
 }
 \arguments{
-\item{U}{the basis of low rank subspace to be updated}
+\item{U}{(m  markers x n samples) numeric matrix. The basis of low rank subspace. The dimensions are same as burnin matrix}
 
-\item{A, }{B matrices to uodate subspace basis}
+\item{A, }{B m x n numeric matrices. Matrices to update subspace basis}
 
-\item{lambda1}{tuning parameter}
+\item{lambda1}{integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))}
 }
 \value{
-updated basis U of subspace
+U (m  markers x n samples) numeric matrix. updated basis U of subspace
 }
 \description{
 Internal function that updates basis of low rank subspace after

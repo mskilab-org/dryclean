@@ -7,10 +7,10 @@
 prep_cov(m.vec = m.vec)
 }
 \arguments{
-\item{m.vec}{GRanges object containing GC corrected reads as a cloumn in metadata}
+\item{m.vec}{GRanges object. GRanges containing GC corrected reads as a cloumn in metadata}
 }
 \value{
-matrix with processed coverage data
+vector of length m with processed coverage data
 }
 \description{
 preapares the GC corrected coverage data for decomposition

@@ -1,5 +1,5 @@
 library(dryclean)
-
+library(GenomicRanges)
 
 
 context("unit testing dryclean operations")
@@ -13,6 +13,7 @@ batch_outputs$V.hat = matrix(runif(100*50, -1, 1), 10, 50)
 batch_outputs$sigma.hat = sort(runif(10, 0, 100), decreasing = T)
 
 samp = GRanges(1, IRanges(c(rep(1, 100)), c(rep(10, 100))), strand=c(rep("*", 100)), reads.corrected = c(runif(100, 0, 100)))
+
 
 U = matrix(runif(100*10), 100, 10)
 m.vec = as.matrix(runif(100, -1, 1))

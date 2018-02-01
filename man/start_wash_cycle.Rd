@@ -8,18 +8,18 @@ start_wash_cycle(cov, mc.cores = 1, burnin.samples.path = NA,
   verbose = TRUE, chr = NA, whole_genome = TRUE)
 }
 \arguments{
-\item{cov}{GRanges containig the GC corrected cov data outputed from fragCounter. Needs metadata with header "reads.corrected"}
+\item{cov}{GRanges object containig the GC corrected cov data outputed from fragCounter. Needs metadata with header "reads.corrected"}
 
-\item{mc.cores}{number of cores to use for parallelization}
+\item{mc.cores}{interger. Number of cores to use for parallelization}
 
-\item{burnin.samples.path}{path to burnin samples for each chromosome}
+\item{burnin.samples.path}{string. Path to burnin samples for each chromosome}
 
-\item{chr}{if a single chromosome is to be processed, name of chromosome}
+\item{chr}{string. if a single chromosome is to be processed, name of chromosome. Requires whole_genome = FALSE}
 
-\item{whole_genome}{for processing chromosome or whole genome}
+\item{whole_genome}{boolean (default = TRUE). For processing chromosome or whole genome}
 }
 \value{
-GRange with decomposition
+GRange object with decomposition
 }
 \description{
 function begins the online rPCA process and parallelizes the chromosmes for speed.  

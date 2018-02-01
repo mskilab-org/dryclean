@@ -7,12 +7,12 @@
 thresh(x, mu)
 }
 \arguments{
-\item{x}{vector to which shrinkage is to applied}
+\item{x}{numeric vector of length == number of markers in the sample. Vector to which shrinkage is to be applied.}
 
-\item{mu}{shrinkage parameter}
+\item{mu}{integer. Shrinkage parameter to use (default = lambda2 = 1/(sqrt(no. of markers in input vector)))}
 }
 \value{
-regularized vector y
+numeric vector. Regularized vector y
 }
 \description{
 Internal shrinkage function for values in S vector:
