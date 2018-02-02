@@ -230,7 +230,7 @@ start_wash_cycle = function(cov, mc.cores = 1, burnin.samples.path = NA, verbose
         rpca.1 = readRDS(paste0(burnin.samples.path, "/rpca.burnin.chr", x, ".rds"))
         if(verbose == TRUE){
             message(paste0("Let's begin, this is chr", x))}
-        m.vec = prep.cov(cov)
+        m.vec = prep_cov(cov)
         m.vec = m.vec[seqnames == x]
         m.vec = as.matrix(m.vec$reads.corrected)
         L.burnin = rpca.1$L
@@ -242,6 +242,7 @@ start_wash_cycle = function(cov, mc.cores = 1, burnin.samples.path = NA, verbose
         decomposed = dryclean::wash_cycle(m.vec = m.vec, L.burnin = L.burnin, S.burnin = S.burnin, r = r, U.hat = U.hat, V.hat = V.hat, sigma.hat = sigma.hat)
         if (verbose == TRUE){
             message("combining matrices with gRanges")}
+        cov = gr2dt(cov)
         cov = cov[seqnames == x]
         cov = cbind(decomposed[[2]], cov)
         colnames(cov)[1] = 'S'
