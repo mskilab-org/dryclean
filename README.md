@@ -149,23 +149,32 @@ Now we are ready for tumor decomposition
 ###  <font color=black> 2. Running `dryclean` on tumor sample </font>
 
 Following is a dummy example. The data diretory has a dummy coverage gRanges object which requires "reads.corrected" field 
+
+
+```R
 coverage_file = readRDS("~/git/dryclean/data/dummy_coverage.rds")
-coverage_fileGRanges object with 100 ranges and 1 metadata column:
-        seqnames    ranges strand |    reads.corrected
-           <Rle> <IRanges>  <Rle> |          <numeric>
-    [1]        1   [1, 10]      * |   2.86974197952077
-    [2]        1   [1, 10]      * |   2.22116750082932
-    [3]        1   [1, 10]      * |   3.57646101620048
-    [4]        1   [1, 10]      * |   3.28955231001601
-    [5]        1   [1, 10]      * | 0.0134209531825036
-    ...      ...       ...    ... .                ...
-   [96]        1   [1, 10]      * |   3.57150336261839
-   [97]        1   [1, 10]      * |   3.80716656334698
-   [98]        1   [1, 10]      * | 0.0819604389835149
-   [99]        1   [1, 10]      * |   3.99150879820809
-  [100]        1   [1, 10]      * |   2.46343192528002
-  -------
-  seqinfo: 1 sequence from an unspecified genome; no seqlengths
+coverage_file
+```
+
+
+    GRanges object with 100 ranges and 1 metadata column:
+            seqnames    ranges strand |    reads.corrected
+               <Rle> <IRanges>  <Rle> |          <numeric>
+        [1]        1   [1, 10]      * |   2.86974197952077
+        [2]        1   [1, 10]      * |   2.22116750082932
+        [3]        1   [1, 10]      * |   3.57646101620048
+        [4]        1   [1, 10]      * |   3.28955231001601
+        [5]        1   [1, 10]      * | 0.0134209531825036
+        ...      ...       ...    ... .                ...
+       [96]        1   [1, 10]      * |   3.57150336261839
+       [97]        1   [1, 10]      * |   3.80716656334698
+       [98]        1   [1, 10]      * | 0.0819604389835149
+       [99]        1   [1, 10]      * |   3.99150879820809
+      [100]        1   [1, 10]      * |   2.46343192528002
+      -------
+      seqinfo: 1 sequence from an unspecified genome; no seqlengths
+
+
 The solvent is a list with the following elements: 
 1. $L$: This is the $L$ low ranked matrix of all the PONs calculated by batch robust PCA mathod
 2. $S$: This is the $S$ sparse matrix of all the PONs calculated by batch robust PCA mathod
@@ -175,25 +184,55 @@ The solvent is a list with the following elements:
 6. $sigma.hat$: svd decompsed first $k$ sigular values of $L$ required for online implentation of rPCA
 
 solvents can be created or one can used precomputed ones provided by us
-solvents = readRDS("~/git/dryclean/data/rpca.burnin.chr1.rds")
-names(solvents)'L' 'S' 'k' 'U.hat' 'V.hat' 'sigma.hat'
+
+
+```R
+solvent = readRDS("~/git/dryclean/data/rpca.burnin.chr1.rds")
+names(solvent)
+```
+
+
+<ol class=list-inline>
+	<li>'L'</li>
+	<li>'S'</li>
+	<li>'k'</li>
+	<li>'U.hat'</li>
+	<li>'V.hat'</li>
+	<li>'sigma.hat'</li>
+</ol>
+
+
+
 In order to run dryclean, simply invoke the following function
-cov_out = start_wash_cycle(cov = coverage_file, burnin.samples.path = "~/git/dryclean/data", whole_genome = FALSE, chr = "1")cov_outGRanges object with 6 ranges and 6 metadata columns:
-      seqnames    ranges strand |                    L                 S
-         <Rle> <IRanges>  <Rle> |            <numeric>         <numeric>
-  [1]        1   [1, 10]      * | -0.00330337586216281 0.520359271078844
-  [2]        1   [1, 10]      * |  -0.0109178359911416  1.43994339613236
-  [3]        1   [1, 10]      * |   0.0139477201074875  1.29967267859486
-  [4]        1   [1, 10]      * |  -0.0175408901210239  1.06422653415043
-  [5]        1   [1, 10]      * | -0.00953444080993428 -4.55653813644987
-  [6]        1   [1, 10]      * | 0.000743513472141894  1.27843817478798
-         reads.corrected                 S1                L1         log.reads
-               <numeric>          <numeric>         <numeric>         <numeric>
-  [1]   2.86974197952077   1.68263206215469 0.996702074280938  1.05422212312404
-  [2]   2.22116750082932   4.22045691605059 0.989141547271502 0.798032958921047
-  [3]   3.57646101620048   3.66809582481963   1.0140454433659  1.27437376852101
-  [4]   3.28955231001601   2.89859615165932 0.982612055717719  1.19075147953513
-  [5] 0.0134209531825036 0.0104983399276166 0.990510867858899 -4.31093812294871
-  [6]   3.07809003512375   3.59102678732255   1.0007437899468  1.12430928616619
-  -------
-  seqinfo: 25 sequences from an unspecified genome
+
+
+```R
+cov_out = start_wash_cycle(cov = coverage_file, burnin.samples.path = "~/git/dryclean/data", whole_genome = FALSE, chr = "1")
+```
+
+
+```R
+head(cov_out)
+```
+
+
+    GRanges object with 6 ranges and 6 metadata columns:
+          seqnames    ranges strand |                    L                 S
+             <Rle> <IRanges>  <Rle> |            <numeric>         <numeric>
+      [1]        1   [1, 10]      * | -0.00330337586216281 0.520359271078844
+      [2]        1   [1, 10]      * |  -0.0109178359911416  1.43994339613236
+      [3]        1   [1, 10]      * |   0.0139477201074875  1.29967267859486
+      [4]        1   [1, 10]      * |  -0.0175408901210239  1.06422653415043
+      [5]        1   [1, 10]      * | -0.00953444080993428 -4.55653813644987
+      [6]        1   [1, 10]      * | 0.000743513472141894  1.27843817478798
+             reads.corrected                 S1                L1         log.reads
+                   <numeric>          <numeric>         <numeric>         <numeric>
+      [1]   2.86974197952077   1.68263206215469 0.996702074280938  1.05422212312404
+      [2]   2.22116750082932   4.22045691605059 0.989141547271502 0.798032958921047
+      [3]   3.57646101620048   3.66809582481963   1.0140454433659  1.27437376852101
+      [4]   3.28955231001601   2.89859615165932 0.982612055717719  1.19075147953513
+      [5] 0.0134209531825036 0.0104983399276166 0.990510867858899 -4.31093812294871
+      [6]   3.07809003512375   3.59102678732255   1.0007437899468  1.12430928616619
+      -------
+      seqinfo: 25 sequences from an unspecified genome
+
