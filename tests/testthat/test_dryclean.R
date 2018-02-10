@@ -1,8 +1,8 @@
-library(dryclean)
-library(GenomicRanges)
-
 
 context("unit testing dryclean operations")
+
+library(dryclean)
+library(GenomicRanges)
 
 batch_outputs = list()
 batch_outputs$L = matrix(runif(100*50, -1, 1), 100, 50)
@@ -12,13 +12,33 @@ batch_outputs$U.hat = matrix(runif(100*50, -1, 1), 100, 10)
 batch_outputs$V.hat = matrix(runif(100*50, -1, 1), 10, 50)
 batch_outputs$sigma.hat = sort(runif(10, 0, 100), decreasing = T)
 
-samp = GRanges(1, IRanges(c(rep(1, 100)), c(rep(10, 100))), strand=c(rep("*", 100)), reads.corrected = c(runif(100, 0, 100)))
-
-
 U = matrix(runif(100*10), 100, 10)
-m.vec = as.matrix(runif(100, -1, 1))
+m.vec = matrix(runif(100, -1, 1))
 
+samp = GRanges(1, IRanges(c(rep(1, 100)), c(rep(10, 100))), strand=c(rep("*", 100)), reads.corrected = c(runif(100, 0, 5)))
 
+test_that("prepare_solvent_phase1", {
+    solvent = prepare_solvent_phase1(normal_table_path = "~/git/dryclean/data/normal_table.rds", mc.cores = 1)
+    expect_equal(length(solvent), 3)
+    expect_equal(dim(solvent$L)[1], 100)
+    expect_equal(dim(solvent$S)[1], 100)
+    expect_equal(dim(solvent$L)[2], 3)
+    expect_equal(dim(solvent$S)[2], 3)
+})
+
+test_that("prepare_solvent_phase2", {
+    solvent = prepare_solvent_phase1(normal_table_path = "~/git/dryclean/data/normal_table.rds", mc.cores = 1)
+    solvent = prepare_solvent_phase2(solvent = solvent, k = 2)
+    expect_equal(length(solvent), 7)
+    expect_equal(dim(solvent$L)[1], 100)
+    expect_equal(dim(solvent$S)[1], 100)
+    expect_equal(dim(solvent$L)[2], 3)
+    expect_equal(dim(solvent$S)[2], 3)
+    expect_equal(dim(solvent$U.hat)[1], 100)
+    expect_equal(dim(solvent$V.hat)[1], 2)
+    expect_equal(dim(solvent$U.hat)[2], 2)
+    expect_equal(dim(solvent$V.hat)[2], 3)
+})
 
 test_that("prep_cov", {
     pcov = prep_cov(samp)
@@ -42,8 +62,3 @@ test_that("start_wash_cycle", {
     expect_error(start_wash_cycle(samp))
     strt = start_wash_cycle(cov = samp, burnin.samples.path = "~/git/dryclean/data", whole_genome = FALSE, chr = "1")
 })
-
-
-
-    
-    

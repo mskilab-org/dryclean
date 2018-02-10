@@ -10,7 +10,7 @@ start_wash_cycle(cov, mc.cores = 1, burnin.samples.path = NA,
 \arguments{
 \item{cov}{GRanges object containig the GC corrected cov data outputed from fragCounter. Needs metadata with header "reads.corrected"}
 
-\item{mc.cores}{interger. Number of cores to use for parallelization}
+\item{mc.cores}{interger (default == 1). Number of cores to use for parallelization}
 
 \item{burnin.samples.path}{string. Path to burnin samples for each chromosome}
 

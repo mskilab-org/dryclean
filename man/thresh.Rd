@@ -2,7 +2,7 @@
 % Please edit documentation in R/dryclean.R
 \name{thresh}
 \alias{thresh}
-\title{Internal shrinkage function for values in S vector}
+\title{This is second phase in preparing the Panel of Normals}
 \usage{
 thresh(x, mu)
 }

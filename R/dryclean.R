@@ -8,11 +8,77 @@
 
 
 ##############################
+## prepare_solvent_phase1
+##############################
+#' @name prepare_solvent_phase1
+#'
+#' @title This is first phase in preparing the Panel of Normals
+#' that will be used for online decomposition
+#' @description This function takes in gRanges outputs from fragCounter and extracts GC corrected
+#' read count data and carrie rPCA decomposition on the matrix thus created
+#' @export
+#' @param normal_table character path to data.table containing two columns "pair" and "normal_cov". See manual for details
+#' @param mc.cores interger (default == 1). Number of cores to use for parallelization
+#' @return list with two decompose matrices: L and S.
+#' @author Aditya Deshpande
+
+prepare_solvent_phase1 = function(normal_table_path = NA, mc.cores = 1){
+    message("Starting the prep for first phase requiring randomized rPCA")
+    message("This process may take time depending on dimensions of input")
+    normal_table = readRDS(normal_table_path)
+    setkeyv(normal_table, "pair")
+    mat.n = mclapply(normal_table[, pair], function(nm){
+    this.norm = readRDS(normal_table[nm, normal_cov])
+    this.norm = gr2dt(this.norm)
+    reads = this.norm[, .(reads.corrected)]
+    reads = log(reads)
+    reads[is.infinite(reads.corrected), reads.corrected := 0]
+    reads[is.na(reads.corrected), reads.corrected := 0]
+    reads[is.nan(reads.corrected), reads.corrected := 0]
+    reads = transpose(reads)
+    return(reads)
+    }, mc.cores = mc.cores, mc.preschedule = F)
+    norms <- rbindlist(mat.n, fill = TRUE)
+    norms <- transpose(norms)
+    mat.norms = as.matrix(norms)
+    solvent = rrpca(mat.norms, trace = T)
+    return(solvent)}
+
+
+##############################
+## prepare_solvent_phase2
+##############################
+#' @name prepare_solvent_phase2
+#'
+#' @title This is second phase in preparing the Panel of Normals
+#' that will be used for online decomposition
+#' @description This function takes in list of rpCA decomposed PON and 
+#' carries randomized SVD on subspace matrix L 
+#' @export
+#' @param solvent list with two decompose matrices: L and S.
+#' @param k integer (default == NA). This is the approximate rank of PON matrix. 
+#' @param mc.cores interger (default == 1). Number of cores to use for parallelization
+#' @return list with two decompose matrices: L and S in addition to left, right sigulare vectors and k singular values.
+#' @author Aditya Deshpande
+
+
+prepare_solvent_phase2 = function(solvent, k = NA, mc.cores = cores){
+    message("Starting the prep for second pahse involving svd")
+    solvent$k = k
+    message("Starting randomizec SVD on L matrix")
+    rsvd.L.burnin = rsvd(solvent$L, k = solvent$k)
+    solvent$U.hat = rsvd.L.burnin$u
+    solvent$V.hat = t(rsvd.L.burnin$v)
+    solvent$sigma.hat = rsvd.L.burnin$d
+    return(solvent)}
+
+
+##############################
 ## thresh
 ##############################
 #' @name thresh
 #'
-#' @title Internal shrinkage function for values in S vector
+#' @title This is second phase in preparing the Panel of Normals
 #' @description Internal shrinkage function for values in S vector:
 #' y = sgn(x)max(|x| - mu, 0)
 #' @keywords internal
@@ -209,7 +275,7 @@ prep_cov = function(m.vec = m.vec){
 #' It is the wrapper that takes in GRanges and outputs GRanges with decomposition 
 #' 
 #' @param cov GRanges object containig the GC corrected cov data outputed from fragCounter. Needs metadata with header "reads.corrected"
-#' @param mc.cores interger. Number of cores to use for parallelization
+#' @param mc.cores interger (default == 1). Number of cores to use for parallelization
 #' @param burnin.samples.path string. Path to burnin samples for each chromosome
 #' @param whole_genome boolean (default = TRUE). For processing chromosome or whole genome
 #' @param chr string. if a single chromosome is to be processed, name of chromosome. Requires whole_genome = FALSE
@@ -239,7 +305,7 @@ start_wash_cycle = function(cov, mc.cores = 1, burnin.samples.path = NA, verbose
         U.hat = rpca.1$U.hat
         V.hat = rpca.1$V.hat
         sigma.hat = rpca.1$sigma.hat
-        decomposed = dryclean::wash_cycle(m.vec = m.vec, L.burnin = L.burnin, S.burnin = S.burnin, r = r, U.hat = U.hat, V.hat = V.hat, sigma.hat = sigma.hat)
+        decomposed = wash_cycle(m.vec = m.vec, L.burnin = L.burnin, S.burnin = S.burnin, r = r, U.hat = U.hat, V.hat = V.hat, sigma.hat = sigma.hat)
         if (verbose == TRUE){
             message("combining matrices with gRanges")}
         cov = gr2dt(cov)
