@@ -1,4 +1,0 @@
-library(dryclean)
-
-context("unit testing dryclean operations")
-

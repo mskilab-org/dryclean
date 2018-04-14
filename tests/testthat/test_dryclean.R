@@ -17,8 +17,12 @@ m.vec = matrix(runif(100, -1, 1))
 
 samp = GRanges(1, IRanges(c(rep(1, 100)), c(rep(10, 100))), strand=c(rep("*", 100)), reads.corrected = c(runif(100, 0, 5)))
 
+normal_table = system.file("data", "normal_table.rds", package = 'dryclean')
+
+samples_path = system.file("data", package = 'dryclean')
+
 test_that("prepare_solvent_phase1", {
-    solvent = prepare_solvent_phase1(normal_table_path = "~/git/dryclean/data/normal_table.rds", mc.cores = 1)
+    solvent = prepare_solvent_phase1(normal_table_path = normal_table, mc.cores = 1)
     expect_equal(length(solvent), 3)
     expect_equal(dim(solvent$L)[1], 100)
     expect_equal(dim(solvent$S)[1], 100)
@@ -27,7 +31,7 @@ test_that("prepare_solvent_phase1", {
 })
 
 test_that("prepare_solvent_phase2", {
-    solvent = prepare_solvent_phase1(normal_table_path = "~/git/dryclean/data/normal_table.rds", mc.cores = 1)
+    solvent = prepare_solvent_phase1(normal_table_path = normal_table, mc.cores = 1)
     solvent = prepare_solvent_phase2(solvent = solvent, k = 2)
     expect_equal(length(solvent), 7)
     expect_equal(dim(solvent$L)[1], 100)
@@ -60,5 +64,5 @@ test_that("wash_cycle", {
 
 test_that("start_wash_cycle", {
     expect_error(start_wash_cycle(samp))
-    strt = start_wash_cycle(cov = samp, burnin.samples.path = "~/git/dryclean/data", whole_genome = FALSE, chr = "1")
+    strt = start_wash_cycle(cov = samp, burnin.samples.path = samples_path, whole_genome = FALSE, chr = "1")
 })
