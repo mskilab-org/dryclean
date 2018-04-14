@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mskilab/dryclean.svg?branch=master)](https://travis-ci.org/mskilab/dryclean)
+[![codecov.io](https://img.shields.io/codecov/c/github/mskilab/dryclean.svg)](https://codecov.io/github/mskilab/dryclean?branch=master)
 
 # <font color=black> dryclean </font>
 
