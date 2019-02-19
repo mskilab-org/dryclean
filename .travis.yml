@@ -5,6 +5,8 @@ sudo: false
 
 r: 3.5.1
 
+r_check_args: "--no-build-vignettes --no-manual --as-cran --no-tests --no-examples"
+
 r_packages:
   - covr
   - devtools
