@@ -17,22 +17,22 @@ m.vec.path = system.file("extdata", "m.vec.rds", package = 'dryclean')
 
 ## Tests
 
-batch_outputs = list()
-batch_outputs$L = matrix(runif(100*50, -1, 1), 100, 50)
-batch_outputs$S = matrix(runif(100*50, -1, 1), 100, 50)
-batch_outputs$k = 10
-batch_outputs$U.hat = matrix(runif(100*50, -1, 1), 100, 10)
-batch_outputs$V.hat = matrix(runif(100*50, -1, 1), 10, 50)
-batch_outputs$sigma.hat = sort(runif(10, 0, 100), decreasing = T)
+##batch_outputs = list()
+##batch_outputs$L = matrix(runif(100*50, -1, 1), 100, 50)
+##batch_outputs$S = matrix(runif(100*50, -1, 1), 100, 50)
+##batch_outputs$k = 10
+##batch_outputs$U.hat = matrix(runif(100*50, -1, 1), 100, 10)
+##batch_outputs$V.hat = matrix(runif(100*50, -1, 1), 10, 50)
+##batch_outputs$sigma.hat = sort(runif(10, 0, 100), decreasing = T)
 
-U = matrix(runif(100*10), 100, 10)
-m.vec = matrix(runif(100, -1, 1))
+##U = matrix(runif(100*10), 100, 10)
+##m.vec = matrix(runif(100, -1, 1))
 
-samp = GRanges(1, IRanges(c(rep(1, 100)), c(rep(10, 100))), strand=c(rep("*", 100)), reads.corrected = c(runif(100, 0, 5)))
+##samp = GRanges(1, IRanges(c(rep(1, 100)), c(rep(10, 100))), strand=c(rep("*", 100)), reads.corrected = c(runif(100, 0, 5)))
 
-normal_table = system.file("data", "normal_table.rds", package = 'dryclean')
+##normal_table = system.file("data", "normal_table.rds", package = 'dryclean')
 
-samples_path = system.file("data", package = 'dryclean')
+##samples_path = system.file("data", package = 'dryclean')
 
 
 test_that("prep_cov", {
