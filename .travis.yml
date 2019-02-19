@@ -4,19 +4,29 @@
 # see the wiki:
 #   https://github.com/craigcitro/r-travis/wiki
 
-language: c
-sudo: required
+####language: c
+#####sudo: required
+
+language: r
+dist: trusty
+cache: packages
+sudo: false
+
+r: 3.5.1
 
 before_install:
   - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
-    - chmod 755 ./travis-tool.sh
-      - ./travis-tool.sh bootstrap
+  - chmod 755 ./travis-tool.sh
+  - ./travis-tool.sh bootstrap
 
 install:
   - ./travis-tool.sh install_bioc_deps
-    - ./travis-tool.sh install_deps
-      - ./travis-tool.sh install_github mskilab/gUtils
-        - ./travis-tool.sh install_github r-lib/covr
+  - ./travis-tool.sh install_deps
+  - ./travis-tool.sh install_github r-lib/covr
+
+r_github_packages:
+  - mskilab/gUtils
+
 
 script: ./travis-tool.sh run_tests
 
