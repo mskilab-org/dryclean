@@ -4,7 +4,6 @@ context("unit testing dryclean operations")
 library(dryclean)
 library(GenomicRanges)
 
-
 sample.1.path = system.file("extdata", "samp1.rds", package = 'dryclean')
 sample.2.path = system.file("extdata", "samp2.rds", package = 'dryclean')
 sample.3.path = system.file("extdata", "samp3.rds", package = 'dryclean')
