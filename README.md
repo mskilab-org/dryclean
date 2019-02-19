@@ -3,7 +3,7 @@
 
 # <font color=black> dryclean </font>
 
-![dryclean](https://github.com/mskilab/dryclean/inst/extdata/DNAhanger.png)
+![dryclean](inst/extdata/DNAhanger.png)
 
 ### <font color=black> Robust PCA based method to de-noise genomic coverage data.</font>
 
@@ -42,7 +42,9 @@ devtools::install_github('mskilab/dryclean')
 
 dryclean is a robust principal component analysis (rPCA) based method. dryclean uses a panel of normal (PON) samples to learn the landscape of both biological and technical noise in read depth data. dryclean then uses this landscape significantly reduce noise and artifacts in the signal for tumor samples. The input to the algorithm is GC amd mappability corrected read depth data from fragCounter. Refer to figure below.
 
-![Workflow](https://github.com/mskilab/dryclean/inst/extdata/Workflow.png)
+
+![](inst/extdata/Workflow.png)
+
 
 ###  <font color=black> 1. Creating Panel of Normal aka detergent </font>
 
