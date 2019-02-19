@@ -64,23 +64,23 @@ test_that("wash_cycle", {
 
 test_that("prepare_detergent", {
     expect_error(prepare_detergent(normal_table.path))
-    all.smp = prepare_detergent(normal.table.path = normal_table.path, path.to.save = "~/git/dryclean/inst/extdata/")
+    all.smp = prepare_detergent(normal.table.path = normal_table.path, path.to.save = "https://github.com/mskilab/dryclean/tree/master/inst/extdata/")
     expect_true(identical(names(all.smp), c("L", "S","err", "k", "U.hat", "V.hat", "sigma.hat")))
-    hclust.smp = prepare_detergent(normal.table.path = normal_table.path, path.to.save = "~/git/dryclean/inst/extdata/", use.all = FALSE, choose.by.clustering = TRUE, number.of.samples = 3)
+    hclust.smp = prepare_detergent(normal.table.path = normal_table.path, path.to.save = "https://github.com/mskilab/dryclean/tree/master/inst/extdata/", use.all = FALSE, choose.by.clustering = TRUE, number.of.samples = 3)
     expect_true(identical(names(hclust.smp), c("L", "S","err", "k", "U.hat", "V.hat", "sigma.hat")))
 })
 
 
 test_that("identify_germline", {
     expect_error(identify_germline(normal_table.path))
-    all.smp = identify_germline(normal.table.path = normal_table.path, path.to.save = "~/git/dryclean/inst/extdata/")
+    all.smp = identify_germline(normal.table.path = normal_table.path, path.to.save = "https://github.com/mskilab/dryclean/tree/master/inst/extdata/")
 })
 
 
 test_that("start_wash_cycle", {
     sample.1 = readRDS(sample.1.path)
     expect_error(start_wash_cycle(sample.1))
-    strt = start_wash_cycle(cov = sample.1, detergent.pon.path = "~/git/dryclean/inst/extdata/", whole_genome = TRUE, chr = NA, germline.filter = FALSE)
+    strt = start_wash_cycle(cov = sample.1, detergent.pon.path = "https://github.com/mskilab/dryclean/tree/master/inst/extdata/", whole_genome = TRUE, chr = NA, germline.filter = FALSE)
     expect_true(identical(colnames(values(strt)), c("L", "reads.corrected.log","reads.corrected.FC", "median.chr", "reads.corrected", "L1", "log.reads")))
     expect_error(start_wash_cycle(samp))
     strt = start_wash_cycle(cov = samp, burnin.samples.path = samples_path, whole_genome = FALSE, chr = "1")
