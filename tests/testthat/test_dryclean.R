@@ -4,27 +4,11 @@ context("unit testing dryclean operations")
 library(dryclean)
 library(GenomicRanges)
 
-<<<<<<< HEAD
-
-
-## batch_outputs = list()
-## batch_outputs$L = matrix(runif(100*50, -1, 1), 100, 50)
-## batch_outputs$S = matrix(runif(100*50, -1, 1), 100, 50)
-## batch_outputs$k = 10
-## batch_outputs$U.hat = matrix(runif(100*50, -1, 1), 100, 10)
-## batch_outputs$V.hat = matrix(runif(100*50, -1, 1), 10, 50)
-## batch_outputs$sigma.hat = sort(runif(10, 0, 100), decreasing = T)
-
-## U = matrix(runif(100*10), 100, 10)
-## m.vec = matrix(runif(100, -1, 1))
-
-## samp = GRanges(1, IRanges(c(rep(1, 100)), c(rep(10, 100))), strand=c(rep("*", 100)), reads.corrected = c(runif(100, 0, 5)))
 
 sample.1.path = system.file("extdata", "samp1.rds", package = 'dryclean')
 sample.2.path = system.file("extdata", "samp2.rds", package = 'dryclean')
 sample.3.path = system.file("extdata", "samp3.rds", package = 'dryclean')
 
-#normal_table = data.table(sample = c("sample1", "sample2", "sample3"), normal_cov = c(sample.1.path, sample.2.path, sample.3.path))
 
 normal_table.path  = system.file("extdata", "normal_table.rds", package = 'dryclean')
 
@@ -33,7 +17,7 @@ U.path = system.file("extdata", "U.rds", package = 'dryclean')
 m.vec.path = system.file("extdata", "m.vec.rds", package = 'dryclean')
 
 ## Tests
-=======
+
 batch_outputs = list()
 batch_outputs$L = matrix(runif(100*50, -1, 1), 100, 50)
 batch_outputs$S = matrix(runif(100*50, -1, 1), 100, 50)
@@ -51,29 +35,6 @@ normal_table = system.file("data", "normal_table.rds", package = 'dryclean')
 
 samples_path = system.file("data", package = 'dryclean')
 
-##test_that("prepare_solvent_phase1", {
-##    solvent = prepare_solvent_phase1(normal_table_path = normal_table, mc.cores = 1)
-##    expect_equal(length(solvent), 3)
-##    expect_equal(dim(solvent$L)[1], 100)
-##    expect_equal(dim(solvent$S)[1], 100)
-##    expect_equal(dim(solvent$L)[2], 3)
-##    expect_equal(dim(solvent$S)[2], 3)
-##})
-
-##test_that("prepare_solvent_phase2", {
-##    solvent = prepare_solvent_phase1(normal_table_path = normal_table, mc.cores = 1)
-##    solvent = prepare_solvent_phase2(solvent = solvent, k = 2)
-##    expect_equal(length(solvent), 7)
-##    expect_equal(dim(solvent$L)[1], 100)
-##    expect_equal(dim(solvent$S)[1], 100)
-##    expect_equal(dim(solvent$L)[2], 3)
-##    expect_equal(dim(solvent$S)[2], 3)
-##    expect_equal(dim(solvent$U.hat)[1], 100)
-##    expect_equal(dim(solvent$V.hat)[1], 2)
-##    expect_equal(dim(solvent$U.hat)[2], 2)
-##    expect_equal(dim(solvent$V.hat)[2], 3)
-##})
->>>>>>> a465c5aa8e36e6efb3c7b468098ae134052a27be
 
 test_that("prep_cov", {
     sample.1 = readRDS(sample.1.path)
@@ -117,15 +78,12 @@ test_that("identify_germline", {
 
 
 test_that("start_wash_cycle", {
-<<<<<<< HEAD
     sample.1 = readRDS(sample.1.path)
     expect_error(start_wash_cycle(sample.1))
     strt = start_wash_cycle(cov = sample.1, detergent.pon.path = "~/git/dryclean/inst/extdata/", whole_genome = TRUE, chr = NA, germline.filter = FALSE)
     expect_true(identical(colnames(values(strt)), c("L", "reads.corrected.log","reads.corrected.FC", "median.chr", "reads.corrected", "L1", "log.reads")))
-=======
     expect_error(start_wash_cycle(samp))
     strt = start_wash_cycle(cov = samp, burnin.samples.path = samples_path, whole_genome = FALSE, chr = "1")
->>>>>>> a465c5aa8e36e6efb3c7b468098ae134052a27be
 })
 
 
