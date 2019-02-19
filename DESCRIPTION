@@ -1,5 +1,5 @@
 Package: dryclean
-Title: rPCA based method to de-noise genomic coverage data.
+Title: rPCA based method to de-noise genomic coverage data
 Version: 0.0.1
 Authors@R: c(person("Aditya", "Deshpande", role = c("aut", "cre"), email = "asd3002@med.cornell.edu"),
 	person("Marcin", "Imielinski", role = c("aut"), email = "mai9037@med.cornell.edu"))
@@ -8,6 +8,7 @@ biocViews:
 Depends: R (>= 3.3.0)
 Imports: 
     gUtils,
+    data.table,
     Matrix,
     rsvd,
     GenomicRanges,
@@ -15,9 +16,8 @@ Imports:
     MASS
 Suggests:
     testthat
-License: GPL v3
+License: GPL-3
 BugReports: http://github.com/mskilab/dryclean/issues
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.0.1
-
+RoxygenNote: 6.1.1

@@ -2,27 +2,36 @@
 % Please edit documentation in R/dryclean.R
 \name{start_wash_cycle}
 \alias{start_wash_cycle}
-\title{function begins the online rPCA process and parallelizes the chromosmes for speed.}
+\title{function begins the online rPCA process. Use this function if you performed batch rPCA on samples as whole withiout dividing into chromosomes.For exomes and whole genomes where number of normal samples are small (<=100).}
 \usage{
-start_wash_cycle(cov, mc.cores = 1, burnin.samples.path = NA,
-  verbose = TRUE, chr = NA, whole_genome = TRUE)
+start_wash_cycle(cov, mc.cores = 1, detergent.pon.path = NA,
+  verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE,
+  chr = NA, germline.filter = TRUE, germline.file = NA)
 }
 \arguments{
-\item{cov}{GRanges object containig the GC corrected cov data outputed from fragCounter. Needs metadata with header "reads.corrected"}
+\item{cov}{GRanges object containig the GC corrected cov data outputed from fragCounter. Needs metadata with header "reads.corrected".}
 
-\item{mc.cores}{interger (default == 1). Number of cores to use for parallelization}
+\item{mc.cores}{interger (default == 1). Number of cores to use for parallelization.}
 
-\item{burnin.samples.path}{string. Path to burnin samples for each chromosome}
+\item{detergent.pon.path}{string. Path to pon/detergent genrated using normal samples.}
 
-\item{chr}{string. if a single chromosome is to be processed, name of chromosome. Requires whole_genome = FALSE}
+\item{verbose}{boolean (default == TRUE). Outputs progress.}
 
-\item{whole_genome}{boolean (default = TRUE). For processing chromosome or whole genome}
+\item{whole_genome}{boolean (default = TRUE). For this function always set this parameter to TRUE.}
+
+\item{use.blacklist}{boolean (default = FALSE). Whether to exclude off-target markers in case of Exomes or targeted sequqnecing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not.}
+
+\item{chr}{integer (default == NA). Depricated. Can be used to decompose a single chromosome.}
+
+\item{germline.filter}{boolean (default == TRUE). If germline markers need to be removed from decomposition.}
+
+\item{germline.file}{character (default == NA). Path to file with germline markers.}
 }
 \value{
 GRange object with decomposition
 }
 \description{
-function begins the online rPCA process and parallelizes the chromosmes for speed.  
+function begins the online rPCA process.  
 It is the wrapper that takes in GRanges and outputs GRanges with decomposition
 }
 \author{

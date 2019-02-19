@@ -1,6 +1,8 @@
 
 # <font color=black> dryclean </font>
 
+![dryclean](~/git/dryclean/inst/extdata/DNAhanger.png)
+
 ### <font color=black> Robust PCA based method to de-noise genomic coverage data.</font>
 
 ## <font color=black> Installations </font>
@@ -36,83 +38,75 @@ devtools::install_github('mskilab/dryclean')
 
 ## <font color=black> Tutorial </font>
 
-This tool is for read depth normalization robustly and independent of paired normal sample. There are two parts to it, first part requires batch rPCA decomposition of a Panel of Normals we call "solvent" (keeping true to the dryclean analogy!). We will make a standard PON available from TCGA data for whole exomes and whole genomes soon. You can also create your own solvents but this can be expensive in terms of time and memory for whole genomes. We highly suggest using our TCGA PONs for WGS. The second part is online implemetation of rPCA that decompses the tumor sample in to $S$ and $L$ where the former matrix captures copy number variation and latter captures thechnical noise and background copy number based on the PON.
+dryclean is a robust principal component analysis (rPCA) based method. dryclean uses a panel of normal (PON) samples to learn the landscape of both biological and technical noise in read depth data. dryclean then uses this landscape significantly reduce noise and artifacts in the signal for tumor samples. The input to the algorithm is GC amd mappability corrected read depth data from fragCounter. Refer to figure below.
 
-Important note: A prerequisite for running dryclean is GC correction by our method called fragCounter which will become a part of dryclean in near future update.
+![Workflow](~/git/dryclean/inst/extdata/Workflow.png)
 
-###  <font color=black> 1. Creating solvent </font>
-library(dryclean)setwd("~/git/dryclean/data")
-If you were to create your own PON for dryclean to use, you will need to run fragCounter on your samples. The output from fragCounter is used to create solvent. You should have all your normals in one directory. The third thing you need is a data.table with two columns:
-1. "paris" column contains the sample name you will use to index the sample
-2. "normal_cov" is a column with paths to the normal samples to be used
+###  <font color=black> 1. Creating Panel of Normal aka detergent </font>
+
+For creating PON the following factors are needed:
+
+1. Tumor and normal sample fragCounter outputs should be stored in two different directories
+2. A data.table with two columns:
+   a. "sample" column contains the sample name you will use to index the sample
+   b. "normal_cov" is a column with paths to the normal samples to be used
 
 Following is an example of such a table
 
 
 ```R
-normal_table_example = readRDS("~/git/dryclean/data/normal_table.rds")
+normal_table_example = readRDS("~/git/dryclean/inst/extdata/normal_table.rds")
 normal_table_example
 ```
 
 
 <table>
-<thead><tr><th scope=col>pair</th><th scope=col>normal_cov</th></tr></thead>
+<thead><tr><th scope=col>sample</th><th scope=col>normal_cov</th></tr></thead>
 <tbody>
-	<tr><td>samp1                        </td><td>~/git/dryclean/data/samp1.rds</td></tr>
-	<tr><td>samp2                        </td><td>~/git/dryclean/data/samp2.rds</td></tr>
-	<tr><td>samp3                        </td><td>~/git/dryclean/data/samp3.rds</td></tr>
+	<tr><td>samp1                        </td><td>~/git/dryclean/inst/extdata/samp1.rds</td></tr>
+	<tr><td>samp2                        </td><td>~/git/dryclean/inst/extdata/samp2.rds</td></tr>
+	<tr><td>samp3                        </td><td>~/git/dryclean/inst/extdata/samp3.rds</td></tr>
 </tbody>
 </table>
 
 
+There are three ways to make the PON:
 
-Once you have all the essential elements, run phase 1 of creating solvents.
-In this pahse, each GRange object is read in and pertinent columns extracted. A mtrix is created with each sample as a column and rPCA is carried out. We use randomized version
-
-Note: The `rrPCA()` is purposefully set to verbose mode as it displays the "target rank" of matrix. This is not a standard output at this point and needs to be noted for second phase. This is crucial for getting pahse2 to work
+1. Using all normal samples availabble. PON can be made with all available normal sample. In this case set use.all = TRUE 
 
 
 ```R
-solvent = prepare_solvent_phase1(normal_table_path = "~/git/dryclean/data/normal_table.rds", mc.cores = 1)
+detergent = prepare_detergent(normal.table.path = "~/git/dryclean/inst/extdata/normal_table.rds", path.to.save = "~/git/dryclean/inst/extdata/", mc.cores = 1, use.all = TRUE)
 ```
 
-    Starting the prep for first phase requiring randomized rPCA
-    This process may take time depending on dimensions of input
-
-
-    
-     Iteration: 1  predicted rank = 1  target rank k = 2  Fro. error = 0.418420723344439
-     Iteration: 2  predicted rank = 1  target rank k = 2  Fro. error = 0.0606708071355258
-     Iteration: 3  predicted rank = 1  target rank k = 2  Fro. error = 0.0159516219506272
-     Iteration: 4  predicted rank = 1  target rank k = 2  Fro. error = 0.00837253226261099
-     Iteration: 5  predicted rank = 1  target rank k = 2  Fro. error = 0.00687830281345693
-     Iteration: 6  predicted rank = 1  target rank k = 2  Fro. error = 0.0053365739356178
-     Iteration: 7  predicted rank = 1  target rank k = 2  Fro. error = 0.0036876138150812
-     Iteration: 8  predicted rank = 1  target rank k = 2  Fro. error = 0.00190013440514129
-     Iteration: 9  predicted rank = 1  target rank k = 2  Fro. error = 0.000783951852238052
-     Iteration: 10  predicted rank = 1  target rank k = 2  Fro. error = 0.000340787584414362
-     Iteration: 11  predicted rank = 1  target rank k = 2  Fro. error = 0.000274445726843516
-     Iteration: 12  predicted rank = 1  target rank k = 2  Fro. error = 0.000263312013672022
-     Iteration: 13  predicted rank = 1  target rank k = 2  Fro. error = 0.000197490734067693
-     Iteration: 14  predicted rank = 1  target rank k = 2  Fro. error = 0.000117371650209188
-     Iteration: 15  predicted rank = 1  target rank k = 2  Fro. error = 6.12925948234308e-05
-     Iteration: 16  predicted rank = 1  target rank k = 2  Fro. error = 3.88266083109873e-05
-     Iteration: 17  predicted rank = 1  target rank k = 2  Fro. error = 3.18871504840978e-05
-     Iteration: 18  predicted rank = 1  target rank k = 2  Fro. error = 2.41617367212416e-05
-     Iteration: 19  predicted rank = 1  target rank k = 2  Fro. error = 1.51291492408584e-05
-     Iteration: 20  predicted rank = 1  target rank k = 2  Fro. error = 7.95531579597329e-06
+2. Using random subset of normal samples availabble. 
 
 
 ```R
-names(solvent)
-head(solvent$L)
+detergent = prepare_detergent(normal.table.path = "~/git/dryclean/inst/extdata/normal_table.rds", path.to.save = "~/git/dryclean/inst/extdata/", mc.cores = 1, use.all = FALSE, choose.randomly = TRUE)
+```
+
+3. Cluster based approach. In order to keep the size of PON as small as possible but maximize the information in the PON. This is acheived by clustering the genomic background of normal samples and selecting normal samples from each cluster. Hierarchical clustering is used on L matrix after decomposing a small genomic region of all normal samples.
+
+
+```R
+detergent = prepare_detergent(normal.table.path = "~/git/dryclean/inst/extdata/normal_table.rds", path.to.save = "~/git/dryclean/inst/extdata/", mc.cores = 1, use.all = FALSE, choose.by.clustering = TRUE)
 ```
 
 
+```R
+names(detergent)
+head(detergent$L)
+```
+
+```R
 <ol class=list-inline>
 	<li>'L'</li>
 	<li>'S'</li>
-	<li>'err'</li>
+	<li>'k'</li>
+	<li>'U.hat'</li>
+	<li>'V.hat'</li>
+	<li>'sigma.hat'</li>
 </ol>
 
 
@@ -128,25 +122,58 @@ head(solvent$L)
 	<tr><td>0.1233053</td><td>0.1344392</td><td>0.1228305</td></tr>
 </tbody>
 </table>
+```
+
+The detergent is a list with the following elements: 
+1. L: This is the L low ranked matrix of all the PONs calculated by batch robust PCA mathod
+2. S: This is the S sparse matrix of all the PONs calculated by batch robust PCA mathod
+3. k: This is estimated rank of a matrix where coverage values from each normal sample forms a column
+4. U.hat: svd decompsed left sigular matrix of L required for online implentation of rPCA
+5. V.hat: svd decompsed right sigular matrix of L required for online implentation of rPCA
+6. sigma.hat: svd decompsed first k sigular values of L required for online implentation of rPCA
 
 
+###  <font color=black> 2. Identifying germline events </font>
 
-Phase2 consists of carrying SVD on subspace matrix $L$ which is necessary to carry on the online uodate of subspace later on. We use randomizec version of SVD. 
+Since a PON is used for decomposing the tumor samples, a method is required identify and remove germline events. This is achieved by looking at all normal samples as a population and infer the markers that have a copynumber events at a given frequency, set by user.
 
-As noted earlier, at this stage, user must note the final `k` printed from phase1 to be used in this pahse
+In order to do so, normal samples are treated as tumors and all copy number changes in the normal samples are extracted using thr PON created. Here is an example:
+
+```R
+decomp.1 = start_wash_cycle(cov = sample.1, detergent.pon.path = "~/git/dryclean/inst/extdata/", whole_genome = TRUE, chr = NA, germline.filter = FALSE)
+
+```
+
+Once all normal samples are decomposed, the data.table is updated to reflect that:
 
 
 ```R
-solvent = prepare_solvent_phase2(solvent = solvent, k = 2) #Note that k needs to be set and this is printed in the following output
+normal_table_example = readRDS("~/git/dryclean/inst/extdata/normal_table.rds")
+normal_table_example
 ```
 
-    Starting the prep for second pahse involving svd
-    Starting randomizec SVD on L matrix
 
-names(solvent)'L' 'S' 'err' 'k' 'U.hat' 'V.hat' 'sigma.hat'
+<table>
+<thead><tr><th scope=col>sample</th><th scope=col>normal_cov</th></tr></thead>
+<tbody>
+	<tr><td>samp1                        </td><td>~/git/dryclean/inst/extdata/samp1.rds               </td><td>~/git/dryclean/inst/extdata/decomp1.rd</td></tr> 
+	<tr><td>samp2                        </td><td>~/git/dryclean/inst/extdata/samp2.rds               </td><td>~/git/dryclean/inst/extdata/decomp2.rd</td></tr>
+	<tr><td>samp3                        </td><td>~/git/dryclean/inst/extdata/samp3.rds               </td><td>~/git/dryclean/inst/extdata/decomp3.rd</td></tr>
+	
+</tbody>
+</table>
+
+
+With this table we can run the following:
+
+```R
+grm = identify_germline(normal.table.path = "~/git/dryclean/inst/extdata/normal_table.rds", path.to.save = "~/git/dryclean/inst/extdata/", signal.thresh=0.5, pct.thresh=0.98)
+
+```
+
 Now we are ready for tumor decomposition
 
-###  <font color=black> 2. Running `dryclean` on tumor sample </font>
+###  <font color=black> 3. Running `dryclean` on tumor sample </font>
 
 Following is a dummy example. The data diretory has a dummy coverage gRanges object which requires "reads.corrected" field 
 
@@ -156,83 +183,94 @@ coverage_file = readRDS("~/git/dryclean/data/dummy_coverage.rds")
 coverage_file
 ```
 
-
-    GRanges object with 100 ranges and 1 metadata column:
-            seqnames    ranges strand |    reads.corrected
-               <Rle> <IRanges>  <Rle> |          <numeric>
-        [1]        1   [1, 10]      * |   2.86974197952077
-        [2]        1   [1, 10]      * |   2.22116750082932
-        [3]        1   [1, 10]      * |   3.57646101620048
-        [4]        1   [1, 10]      * |   3.28955231001601
-        [5]        1   [1, 10]      * | 0.0134209531825036
-        ...      ...       ...    ... .                ...
-       [96]        1   [1, 10]      * |   3.57150336261839
-       [97]        1   [1, 10]      * |   3.80716656334698
-       [98]        1   [1, 10]      * | 0.0819604389835149
-       [99]        1   [1, 10]      * |   3.99150879820809
-      [100]        1   [1, 10]      * |   2.46343192528002
-      -------
-      seqinfo: 1 sequence from an unspecified genome; no seqlengths
-
-
-The solvent is a list with the following elements: 
-1. $L$: This is the $L$ low ranked matrix of all the PONs calculated by batch robust PCA mathod
-2. $S$: This is the $S$ sparse matrix of all the PONs calculated by batch robust PCA mathod
-3. $k$: This is estimated rank of a matrix where coverage values from each normal sample forms a column
-4. $U.hat$: svd decompsed left sigular matrix of $L$ required for online implentation of rPCA
-5. $V.hat$: svd decompsed right sigular matrix of $L$ required for online implentation of rPCA
-6. $sigma.hat$: svd decompsed first $k$ sigular values of $L$ required for online implentation of rPCA
-
-solvents can be created or one can used precomputed ones provided by us
-
-
 ```R
-solvent = readRDS("~/git/dryclean/data/rpca.burnin.chr1.rds")
-names(solvent)
+GRanges object with 50 ranges and 1 metadata column:
+       seqnames    ranges strand | reads.corrected
+          <Rle> <IRanges>  <Rle> |           <numeric>
+   [1]       22       1-3      * |    1.64885252481326
+   [2]       22       3-5      * |    3.81186937098391
+   [3]       22       5-7      * |    2.58672125521116
+   [4]       22       7-9      * |   0.606155182467774
+   [5]       22      9-11      * |    4.83087254804559
+   ...      ...       ...    ... .                 ...
+  [46]       22     91-93      * |    3.85029493598267
+  [47]       22     93-95      * |    2.96715440694243
+  [48]       22     95-97      * |    3.56770512764342
+  [49]       22     97-99      * |    4.38074178760871
+  [50]       22    99-101      * |     0.1496995636262
+  -------
+  seqinfo: 1 sequence from an unspecified genome; no seqlengths
 ```
-
-
-<ol class=list-inline>
-	<li>'L'</li>
-	<li>'S'</li>
-	<li>'k'</li>
-	<li>'U.hat'</li>
-	<li>'V.hat'</li>
-	<li>'sigma.hat'</li>
-</ol>
-
-
 
 In order to run dryclean, simply invoke the following function
 
 
 ```R
-cov_out = start_wash_cycle(cov = coverage_file, burnin.samples.path = "~/git/dryclean/data", whole_genome = FALSE, chr = "1")
+cov_out = start_wash_cycle(cov = coverage_file, detergent.pon..path = "~/git/dryclean/inst/extdata", whole_genome = TRUE, chr = NA, germline.filter = TRUE, germline.file = "~/git/dryclean/inst/extdata/germline.markers.rds")
+
 ```
 
 
 ```R
 head(cov_out)
+
+```
+
+```R
+
+GRanges object with 6 ranges and 12 metadata columns:
+      seqnames  ranges  strand |      L                 reads.corrected.log
+         <Rle> <IRanges> <Rle> |      <numeric>             <numeric>
+  [1]        22 1-3          * |     0.169769767795501 -0.0568088592719299
+  [2]        22 3-5          * |    0.0177158854407206  0.0770640446340152
+  [3]        22 5-7          * |    0.0664955328192282  0.0347592933585855
+  [4]        22 7-9          * |     0.230039681056936  -0.100959892306004
+  [5]        22 9-11         * | -0.000366098004722278 -0.0812780098385511
+  [6]        22 11-13        * |     0.135769072540305  0.0878847580129722
+          reads                gc       map reads.corrected.FC
+      <numeric>         <numeric> <numeric>          <numeric>
+  [1]       762 0.612756264236902         1   2.78713582604055
+  [2]       324 0.587301587301587         1    1.1277123686483
+  [3]       474 0.494505494505495         1   1.60676731785653
+  [4]      1131 0.568181818181818         1   3.81814927898723
+  [5]       254 0.592592592592593         1  0.890949237364552
+  [6]       314 0.697819314641745         1   2.43451610256352
+             median.chr blacklisted   reads.corrected                L1
+              <numeric>   <logical>         <numeric>         <numeric>
+  [1] 0.608371537098667       FALSE 0.944774637021039  1.18503198738368
+  [2] 0.608371537098667       FALSE  1.08011124950716   1.0178737425542
+  [3] 0.608371537098667       FALSE  1.03537045825707  1.06875618973741
+  [4] 0.608371537098667       FALSE 0.903969288282395  1.25864995349903
+  [5] 0.608371537098667       FALSE 0.921937348159965 0.999633969000975
+  [6] 0.608371537098667       FALSE  1.09186228639812  1.14541735473137
+               log.reads germline.blk
+               <numeric>    <logical>
+  [1]   1.02501448288477        FALSE
+  [2]  0.120191128226724        FALSE
+  [3]  0.474224283401017        FALSE
+  [4]   1.33976582327867        FALSE
+  [5] -0.115467825789155        FALSE
+  [6]  0.889748010939351        FALSE
+  -------
+  seqinfo: 24 sequences from an unspecified genome
+
 ```
 
 
-    GRanges object with 6 ranges and 6 metadata columns:
-          seqnames    ranges strand |                    L                 S
-             <Rle> <IRanges>  <Rle> |            <numeric>         <numeric>
-      [1]        1   [1, 10]      * | -0.00330337586216281 0.520359271078844
-      [2]        1   [1, 10]      * |  -0.0109178359911416  1.43994339613236
-      [3]        1   [1, 10]      * |   0.0139477201074875  1.29967267859486
-      [4]        1   [1, 10]      * |  -0.0175408901210239  1.06422653415043
-      [5]        1   [1, 10]      * | -0.00953444080993428 -4.55653813644987
-      [6]        1   [1, 10]      * | 0.000743513472141894  1.27843817478798
-             reads.corrected                 S1                L1         log.reads
-                   <numeric>          <numeric>         <numeric>         <numeric>
-      [1]   2.86974197952077   1.68263206215469 0.996702074280938  1.05422212312404
-      [2]   2.22116750082932   4.22045691605059 0.989141547271502 0.798032958921047
-      [3]   3.57646101620048   3.66809582481963   1.0140454433659  1.27437376852101
-      [4]   3.28955231001601   2.89859615165932 0.982612055717719  1.19075147953513
-      [5] 0.0134209531825036 0.0104983399276166 0.990510867858899 -4.31093812294871
-      [6]   3.07809003512375   3.59102678732255   1.0007437899468  1.12430928616619
-      -------
-      seqinfo: 25 sequences from an unspecified genome
+
+The output has following metadata fields: 
+1. L: This is the L low ranked vector after decomposition and represent the background noise separated by dryclean in the log space
+2. reads.corrected.log: THis is the main output. The S vector with thr inferred copy number signal separated by dryclean in the log space
+3. reads: Raw read counts
+4. gc: GC score
+5. map: mappability score
+6. reads.corrected.FC: This is the fragCounter input in lineat space
+7. median.chr: median chromosome signal
+8. blacklisted: if off target marker list is available and used
+9. reads.corrected: This is the main output. S vector in read count/ratio space
+10. L1: This is the L low ranked vector after decomposition and represent the background noise separated by dryclean in read count/ratio space 
+11. log.reads: log of the fragCounter signal
+12. germline.blk: germline marker based on the inferred germline function
+
+
 

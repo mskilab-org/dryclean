@@ -1,76 +1,339 @@
 #' @import GenomicRanges
-#' @import data.table
+#' @importFrom data.table data.table
+#' @importFrom data.table rbindlist
+#' @importFrom data.table set
+#' @importFrom data.table setDT
+#' @importFrom data.table setkey
+#' @importFrom data.table setkeyv
+#' @importFrom data.table setnames
+#' @importFrom data.table transpose
+#' @import Matrix 
 #' @import rsvd
-#' @import gUtils
-#' @import Matrix
-#' @import stats
-#' @import MASS
+#' @importFrom gUtils gr2dt
+#' @importFrom gUtils dt2gr
+#' @importFrom stats hclust
+#' @importFrom stats cutree
+#' @importFrom stats dist
+#' @importFrom stats median
+#' @importFrom stats na.omit
+#' @importFrom MASS ginv
+#' @importFrom utils globalVariables
+ ##########@import rrpca.mod.R
 
+globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted", "decomposed_cov", "germline.status", "log.reads", "mclapply", "median.chr", "normal_cov", "reads.corrected", "reads.corrected.FC", "reads.corrected.log", ".N", ".SD", ":="))
 
 ##############################
-## prepare_solvent_phase1
+## prepare_detergent
 ##############################
-#' @name prepare_solvent_phase1
+#' @name prepare_detergent
 #'
-#' @title This is first phase in preparing the Panel of Normals
+#' @title This is the frist stage and involves preparing the Panel of Normals (PON)
 #' that will be used for online decomposition
+#' 
 #' @description This function takes in gRanges outputs from fragCounter and extracts GC corrected
-#' read count data and carrie rPCA decomposition on the matrix thus created
+#' read count data and carries rPCA decomposition on the matrix thus created. The normal samples used to form the PON can be selected randomly or by clustering the genomic bacground or all samples can be used.
+#' 
 #' @export
-#' @param normal_table character path to data.table containing two columns "pair" and "normal_cov". See manual for details
-#' @param mc.cores interger (default == 1). Number of cores to use for parallelization
-#' @return list with two decompose matrices: L and S.
-#' @author Aditya Deshpande
-
-prepare_solvent_phase1 = function(normal_table_path = NA, mc.cores = 1){
-    message("Starting the prep for first phase requiring randomized rPCA")
-    message("This process may take time depending on dimensions of input")
-    normal_table = readRDS(normal_table_path)
-    setkeyv(normal_table, "pair")
-    mat.n = mclapply(normal_table[, pair], function(nm){
-    this.norm = readRDS(normal_table[nm, normal_cov])
-    this.norm = gr2dt(this.norm)
-    reads = this.norm[, .(reads.corrected)]
-    reads = log(reads)
-    reads[is.infinite(reads.corrected), reads.corrected := 0]
-    reads[is.na(reads.corrected), reads.corrected := 0]
-    reads[is.nan(reads.corrected), reads.corrected := 0]
-    reads = transpose(reads)
-    return(reads)
-    }, mc.cores = mc.cores, mc.preschedule = F)
-    norms <- rbindlist(mat.n, fill = TRUE)
-    norms <- transpose(norms)
-    mat.norms = as.matrix(norms)
-    solvent = rrpca(mat.norms, trace = T)
-    return(solvent)}
-
-
-##############################
-## prepare_solvent_phase2
-##############################
-#' @name prepare_solvent_phase2
+#' @param normal.table.path character path to data.table containing two columns "sample" and "normal_cov". See manual for details
+#' 
+#' @param use.all boolean (default == TRUE). If all normal samples are to be used for creating PON
+#' 
+#' @param choose.randomly boolean (default == FALSE). If a random subset of normal samples are to be used for creating PON.
+#' 
+#' @param choose.by.clustering boolean (default == FALSE). Clusters normal samples based on the genomic background and takes a random sample from within the clusters.
+#' 
+#' @param number.of.samples interger (default == 50). If choose.by.clustering == TRUE, this is the number of clusters at which to cut tree.
+#' 
+#' @param path.to.save charater (default == NA). Path to save the PON created.
+#' 
+#' @param num.cores interger (default == 1). Number of cores to use for parallelization
 #'
-#' @title This is second phase in preparing the Panel of Normals
-#' that will be used for online decomposition
-#' @description This function takes in list of rpCA decomposed PON and 
-#' carries randomized SVD on subspace matrix L 
-#' @export
-#' @param solvent list with two decompose matrices: L and S.
-#' @param k integer (default == NA). This is the approximate rank of PON matrix. 
-#' @param mc.cores interger (default == 1). Number of cores to use for parallelization
-#' @return list with two decompose matrices: L and S in addition to left, right sigulare vectors and k singular values.
+#' @param verbose boolean (default == TRUE). Outputs progress.
+#' 
+#' @return \code{prepare_detergent} returns a list containing the following components:
+#' 
+#'    \item{L}{  array_like; \cr
+#'              low-rank component; \eqn{(m, n)} dimensional array.
+#'    }
+#'    \item{S}{  array_like; \cr
+#'              sparse component; \eqn{(m, n)} dimensional array.
+#'    }
+#'    \item{k}{  numeric; \cr
+#'              estimated rank of the matrix; used in the online implementation.
+#'    }
+#'    \item{U.hat}{  array_like; \cr
+#'              left singular vectors of L; \eqn{(m, k)} dimensional array.
+#'    }
+#'    \item{V.hat}{  array_like; \cr
+#'              right singular vectors of L; \eqn{(n, k)} dimensional array.
+#'    }
+#'    \item{sigma.hat}{  array_like; \cr
+#'              singular values; vector of length \eqn{(k)}.
+#'    }
+#' 
 #' @author Aditya Deshpande
 
 
-prepare_solvent_phase2 = function(solvent, k = NA, mc.cores = cores){
-    message("Starting the prep for second pahse involving svd")
-    solvent$k = k
-    message("Starting randomizec SVD on L matrix")
-    rsvd.L.burnin = rsvd(solvent$L, k = solvent$k)
-    solvent$U.hat = rsvd.L.burnin$u
-    solvent$V.hat = t(rsvd.L.burnin$v)
-    solvent$sigma.hat = rsvd.L.burnin$d
-    return(solvent)}
+prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, verbose = TRUE, path.to.save = NA, num.cores = 1){
+    
+    if (verbose){
+        message("Starting the preparation of Panel of Normal samples a.k.a detergent")
+    }
+
+    if (is.na(normal.table.path)){
+        stop("Need a table with paths to normal samples to create a PON")
+    }
+
+    if (is.na(path.to.save)){
+        stop("Need a path to save decomposed PON")
+    }
+
+    normal.table = readRDS(normal.table.path)
+    setkeyv(normal.table, "sample")
+
+    num.samp = nrow(normal.table)
+
+    if (verbose){
+        message(paste0(num.samp, " samples available"))
+    }
+        
+    if (use.all & choose.randomly | use.all & choose.by.clustering | choose.randomly & choose.by.clustering | use.all & choose.randomly & choose.by.clustering){
+        stop("only one of use.all, choose.randomly, choose.by.clustering can be set to TRUE. Rectify and restart")
+    }
+
+    if (choose.randomly){
+        if (verbose){ 
+            message(paste0("Selecting ", number.of.samples, " normal samples randomly"))
+        }
+        set.seed(12)
+        samp.final = sample(1:num.samp, number.of.samples)
+        samp.final = normal.table[samp.final]
+        setkey(samp.final, "sample")
+    }
+
+    if (choose.by.clustering){
+
+        if (verbose){ 
+            message("Starting the clustering")
+        }
+        
+        mat.small = mclapply(normal.table[, sample], function(nm){
+            this.cov = tryCatch(readRDS(normal.table[nm, normal_cov]), error = function(e) NULL)
+            if (!is.null(this.cov)){
+                this.cov = gr2dt(this.cov)
+                reads = this.cov[seqnames == "22", .(seqnames, reads.corrected)]
+                reads[, median.chr := median(.SD$reads.corrected, na.rm = T), by = seqnames]
+                reads[is.na(reads.corrected), reads.corrected := median.chr]
+                min.cov = min(reads[reads.corrected > 0]$reads.corrected, na.rm = T)
+                reads[reads.corrected == 0, reads.corrected := min.cov]
+                reads[reads.corrected < 0, reads.corrected := min.cov]
+                reads = log(reads[, .(reads.corrected)])
+                reads = transpose(reads)
+                reads = cbind(reads, nm)
+            } else {reads = data.table(NA)}
+            return(reads)}, mc.cores = num.cores)
+        
+        gc()
+        
+        mat.sub = rbindlist(mat.small, fill = T)
+        mat.sub = na.omit(mat.sub)
+        ix = ncol(mat.sub)
+        samp.names = mat.sub[, ..ix]
+        mat.sub.t = transpose(mat.sub[, 1:(ncol(mat.sub) - 1)])
+        rm(mat.sub)
+        gc()
+
+        if (verbose){ 
+            message("Starting decomposition on a small section of genome")
+        }
+
+        mat.sub.t = as.matrix(mat.sub.t)
+        gc()
+        mat.sub.t = Matrix(mat.sub.t)
+        gc()
+
+        rpca.mat = rrpca(mat.sub.t, trace = F)
+
+        rm(mat.sub.t)
+        gc()
+        
+        if (verbose){ 
+            message("Starting clustering")
+        }
+
+        l.mat = rpca.mat$L
+        
+        rm(rpca.mat)
+        gc()
+        
+        l.mat = t(l.mat)
+        rownames(l.mat) = samp.names$nm
+        clust.out = hclust(dist(l.mat))
+        
+        memb = cutree(clust.out, k = number.of.samples)
+        memb = setDT(as.data.frame(data.matrix(memb)), keep.rownames = T)
+        
+        set.seed(12)
+        samp.selected = memb[, .SD[sample(1:.N, 1)], by = V1]$rn
+        samp.final = normal.table[samp.selected]
+        setkey(samp.final, "sample")
+    }
+
+    if (use.all){
+        if (verbose){ 
+            message("Using all samples")
+        }
+
+        samp.final = normal.table
+        setkey(samp.final, "sample")
+    }
+    
+    mat.n = mclapply(samp.final[, sample], function(nm){
+        this.cov = tryCatch(readRDS(samp.final[nm, normal_cov]), error = function(e) NULL)
+        if (!is.null(this.cov)){
+            this.cov = gr2dt(this.cov)
+            message(nm)
+            reads = this.cov[, .(seqnames, reads.corrected)]
+            reads[, median.chr := median(.SD$reads.corrected, na.rm = T), by = seqnames]            
+            reads[is.na(reads.corrected), reads.corrected := median.chr]
+            min.cov = min(reads[reads.corrected > 0]$reads.corrected, na.rm = T)
+            reads[reads.corrected == 0, reads.corrected := min.cov]
+            reads[reads.corrected < 0, reads.corrected := min.cov]
+            reads[, reads.corrected := log(reads.corrected)]
+            reads = reads[, .(reads.corrected)]
+            reads = transpose(reads)
+        } else {reads = data.table(NA)}
+        return(reads)
+    }, mc.cores = num.cores)
+
+    gc()
+
+    mat.bind = rbindlist(mat.n, fill = T)
+    mat.bind = na.omit(mat.bind)
+    mat.bind.t = transpose(mat.bind)
+
+    rm(mat.bind)
+    gc()
+
+    if (verbose){ 
+        message("Starting decomposition")
+    }
+
+    mat.bind.t = as.matrix(mat.bind.t)
+    gc()
+
+    detergent = rrpca(mat.bind.t, trace = F, tol = 0.0001)
+
+    rm(mat.bind.t)
+    gc()
+    
+    rsvd.L.burnin = rsvd(detergent$L, k = detergent$k)
+    detergent$U.hat = rsvd.L.burnin$u
+    detergent$V.hat = t(rsvd.L.burnin$v)
+    detergent$sigma.hat = rsvd.L.burnin$d
+
+    if (verbose){ 
+        message("Finished making the PON or detergent and saving it to the path provided")
+    }
+
+    saveRDS(detergent, paste0(path.to.save, "/detergent.rds"))
+    
+    return(detergent)
+}
+
+
+##############################
+## identify_germline
+##############################
+#' @name identify_germline
+#'
+#' @title This is first phase in preparing the Panel of Normals (PON)
+#' that will be used for online decomposition
+#' 
+#' @description This function takes in gRanges outputs from fragCounter and extracts GC corrected
+#' read count data and carries rPCA decomposition on the matrix thus created
+#' 
+#' @export
+#' @param normal.table.path character path to data.table containing two columns "sample", "normal_cov" and additional column "decomposed_cov" that contains drycleaned normal sample outputs. See manual for details.
+#' 
+#' @param signal.thresh numeric (default == 0.5). This is the threshold to be used to identify an amplification (markers with signal intensity > 0.5) or deletions (markers with signal intensity < -0.5) in log space from dryclean outputs.
+#'
+#' @param pct.thresh numeric (default == 0.98). Proportion of samples in which a given marker is free of germline event.
+#' 
+#' @param path.to.save charater (default == NA). Path to save the germline list created.
+#' 
+#' @param num.cores interger (default == 1). Number of cores to use for parallelization.
+#'
+#' @param verbose boolean (default == TRUE). Outputs progress.
+#' 
+#' @return A GRange object with a metadata field annotating germline markers.
+#' 
+#' @author Aditya Deshpande
+
+identify_germline = function(normal.table.path = NA, signal.thresh = 0.5, pct.thresh = 0.98, verbose = TRUE, path.to.save = NA, num.cores = 1){
+
+    if (verbose){
+        message("Starting the preparation of Panel of Normal samples a.k.a detergent")
+    }
+
+    if (is.na(normal.table.path)){
+        stop("Need a table with paths to decomposed normal samples to identify germline events")
+    }
+    
+    if (is.na(path.to.save)){
+        stop("Need a path to save identified germline events")
+    }
+
+    normal.table = readRDS(normal.table.path)
+    setkeyv(normal.table, "sample")
+    
+    mat.pon = mclapply(normal.table[, sample], function(nm){
+        this.cov = tryCatch(readRDS(normal.table[nm, decomposed_cov]), error = function(e) NULL)
+        if (!is.null(this.cov)){
+            this.cov = gr2dt(this.cov)
+            reads = this.cov[, .(reads.corrected.log)]
+            reads = transpose(reads)
+        } else {reads = data.table(NA)}
+        return(reads)}, mc.cores = num.cores)
+    
+    gc()
+    
+    mat.bind = rbindlist(mat.pon, fill = T)
+    mat.bind = na.omit(mat.bind)
+    mat.bind.t = transpose(mat.bind)
+    
+    rm(mat.bind)
+    gc()
+    
+    for(col in names(mat.bind.t)) set(mat.bind.t, i = which(abs(mat.bind.t[[col]]) > signal.thresh), j = col, value = NA) 
+    for(col in names(mat.bind.t)) set(mat.bind.t, i = which(!is.na(mat.bind.t[[col]])), j = col, value = 1)
+    for(col in names(mat.bind.t)) set(mat.bind.t, i = which(is.na(mat.bind.t[[col]])), j = col, value = 0)
+
+    gc()
+    
+    mat.bind.t[, black_list_pct := rowSums(.SD)/dim(mat.bind.t)[2]]
+    
+    mat.bind.t[, germline.status := ifelse(black_list_pct > pct.thresh, FALSE, TRUE)]
+
+    if (nrow(mat.bind.t[germline.status == FALSE]) < 0.6 * nrow(mat.bind.t)){
+        warning("More than 40% markers classified as germline, consider adjusting thresholds.")
+    }
+    
+    template = readRDS(normal.table[1, normal_cov])
+    values(template) <- NULL
+    template$germline.status <- mat.bind.t$germline.status
+
+    
+    rm(mat.bind.t)
+    gc()
+
+    if (verbose){ 
+        message("Finished identifying germline markers based pn thresholds provided and saving it to the path provided")
+    }
+
+    saveRDS(template, paste0(path.to.save, "/germline.markers.rds"))
+
+}
 
 
 ##############################
@@ -90,7 +353,8 @@ prepare_solvent_phase2 = function(solvent, k = NA, mc.cores = cores){
 thresh = function(x, mu){
     y = pmax(x - mu, 0, na.rm = TRUE)
     y = y + pmin(x + mu, 0, na.rm = TRUE)
-    return(y)}
+    return(y)
+}
 
 
 ##############################
@@ -101,7 +365,7 @@ thresh = function(x, mu){
 #' @title Accelerated Proximal Gradient based projection method
 #' @description project new sample into the burnin space
 #' solving projection by Accelerated Proximal Gradient
-#' min_{v, s} 0.5*|m-Uv-s|_2^2 + 0.5*lambda1*|v|^2 + lambda2*|s|_1
+#'
 #' @keywords internal
 #' @param m.vec numeric vector of length m. Vector of GC corrected coverage data of sample in question
 #' @param U (m  markers x n samples) numeric matrix. The basis of low rank subspace. The dimensions are same as burnin matrix
@@ -122,19 +386,19 @@ apg_project = function(m.vec, U, lambda1, lambda2){
     UUt = (ginv(crossprod(U) + lambda1*I) %*% t(U))
     while (converged == FALSE){
         k =  k + 1
-        ### message("on ", k)
         v.old = v
         v = UUt %*% (m.vec - s)
         s.old = s
         s = thresh(m.vec - (U %*% v), lambda2)
-        ### print(norm(v - v.old, "2"))
-        ### print(norm(s - s.old, "2"))
         e = max(norm(v - v.old, "2"), norm(s - s.old, "2"))/q
         if (e < 1e-6 || k > maxiter){
             converged = TRUE
         }
     }
-    return(list(v, s))}
+    return(list(v, s))
+}
+
+
 
 ##############################
 ## update_cols
@@ -163,7 +427,8 @@ update_cols = function(U, A, B, lambda1){
         numerator = ((bi - U %*% ai)/ A[i, i]) + ui
         U[, i] = numerator / max(norm(numerator, "2"), 1)
     }
-    return(U)}
+    return(U)
+}
 
 
 ##############################
@@ -177,56 +442,77 @@ update_cols = function(U, A, B, lambda1){
 #'
 #' 
 #' @param m.vec numeric vector of length m. Vector of GC corrected coverage data of sample in question
-#' @param lambda1, lambda2 integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))
-#' @param L.burnin (m  markers x n samples) numeric matrix. L matrix of panel of normals after batch rPCA decomposition 
-#' @param S.burnin (m  markers x n samples) numeric matrix. S matrix of panel of normals after batch rPCA decomposition 
+#' 
+#' @param lambda1, integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))
+#'
+#' @param lambda2, integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))
+#'
+#' @param L.burnin (m  markers x n samples) numeric matrix. L matrix of panel of normals after batch rPCA decomposition
+#' 
+#' @param S.burnin (m  markers x n samples) numeric matrix. S matrix of panel of normals after batch rPCA decomposition
+#' 
 #' @param r integer. Estimated rank of panel of normals after batch rPCA decomposition
+#' 
 #' @param N (m  markers x n samples) numeric matrix. Matrix of GC corrected coverage data of panel of normals for batch rPCA decomposition
+#' 
 #' @param U.hat (m  markers x n samples) numeric matrix. Right singular matrix of L.burnin
+#' 
 #' @param V.hat (m  markers x n samples) numeric matrix. Left singular matrix of L.burnin
-#' @param sigma.hat numeric vector of length r. Singular values of L.burnin 
-#' @param decomp boolean (default = FALSE). If TRUE, carry batch rPCA decomposition on N matrix
+#' 
+#' @param sigma.hat numeric vector of length r. Singular values of L.burnin
+#' 
+#' @param verbose boolean (default == TRUE). Outputs progress.
+#' 
 #' @export
 #' @return S and L numeric vectors each of length m. Vectors for sample in question
 #' @author Aditya Deshpande
 
-wash_cycle = function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat, lambda1 = NA, lambda2 = NA, decomp = FALSE, verbose = TRUE){
-    if (decomp == TRUE){
-        if (verbose == TRUE){message("Starting decomposition, this will take a while!")}
-        rpca.N = rrpca(N, trace = TRUE)
-        L.burnin = rpca.N$L
-        r = rpca.N$k
-        S.burnin = rpca.N$S
+wash_cycle = function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat, lambda1 = NA, lambda2 = NA, verbose = TRUE){
+
+    if (verbose == TRUE){
+        message("Using the detergent provided to start washing")
     }
-    else{
-        if (verbose == TRUE){message("Using default set of normals a.k.a solvent")}
-        L.burnin = L.burnin
-        r = r
-        S.burnin = S.burnin
-        U.hat = U.hat
-        V.hat = V.hat
-        sigma.hat = sigma.hat
-    }
+
+    L.burnin = L.burnin
+    r = r
+    S.burnin = S.burnin
+    U.hat = U.hat
+    V.hat = V.hat
+    sigma.hat = sigma.hat
     m = dim(L.burnin)[1]
     n = dim(L.burnin)[2]
+
     if (is.na(lambda1)){
+        
         lambda1 = 1/(sqrt(m))
         lambda2 = 1/(sqrt(m))
-        if (verbose == TRUE){message("lambdas calculated")}
+
+        if (verbose == TRUE){
+            message("lambdas calculated")
+        }
     }
-    ## initialization
-    if (verbose == TRUE){message("And thus we begin the 'wash cycle'")}
+
+    if (verbose == TRUE){
+        message("Here begins the wash cycle")
+    }
+
     U = U.hat %*% sqrt(diag(sigma.hat))
     A = matrix(0, r, r)
     B = matrix(0, m, r)
-    if (verbose == TRUE){message("calculating A and B")}
+    
+    if (verbose == TRUE){
+        message("calculating A and B")
+    }
 
     for (i in 1:dim(V.hat)[2]){
         A = A + outer(V.hat[, i], V.hat[, i])
         B = B + outer((L.burnin[, i] - S.burnin[, i]), V.hat[, i])
     }
 
-    if (verbose == TRUE){message("calculating v and s")}
+    if (verbose == TRUE){
+        message("calculating v and s")
+    }
+
     projection = apg_project(m.vec, U, lambda1, lambda2)
     vi = as.numeric(projection[[1]])
     si = as.numeric(projection[[2]])
@@ -234,10 +520,16 @@ wash_cycle = function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat,
     V.hat = cbind(V.hat, vi)
     A = A + outer(vi, vi) - outer(vi.subtract, vi.subtract)
     B = B + outer((as.numeric(m.vec) - si), vi) - outer((L.burnin[, 1] - S.burnin[, 1]), vi.subtract)
-    if (verbose == TRUE){message("Updating subspace")}
+
+    if (verbose == TRUE){
+        message("Updating subspace")
+    }
+
     U = update_cols(U, A, B, lambda1)
     L.vec = U %*% vi
-    return(list(L.vec, si))}
+
+    return(list(L.vec, si))
+}
 
 
 ##############################
@@ -250,19 +542,39 @@ wash_cycle = function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat,
 #'
 #' 
 #' @keywords internal
+#' 
 #' @param m.vec GRanges object. GRanges containing GC corrected reads as a cloumn in metadata
+#' 
+#' @param blacklist, boolean (default == FALSE). Whether to exclude off-target markers in case of Exomes or targeted sequqnecing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not.
+#'
+#' @param burnin.samples.path, character (default = NA). Path to balcklist markers file
+#' 
 #' @return vector of length m with processed coverage data
+#' 
 #' @author Aditya Deshpande
 
-prep_cov = function(m.vec = m.vec){
+prep_cov = function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA){
+
     m.vec = gr2dt(m.vec)
-    ##m.vec = as.data.table(m.vec)
     m.vec = m.vec[, .(seqnames, reads.corrected)]
+    m.vec[, median.chr := median(.SD$reads.corrected, na.rm = T), by = seqnames]
+    m.vec[is.na(reads.corrected), reads.corrected := median.chr]
+    m.vec[is.infinite(reads.corrected), reads.corrected := median.chr]
+    min.cov = min(m.vec[reads.corrected > 0]$reads.corrected, na.rm = T)
+    m.vec[reads.corrected == 0, reads.corrected := min.cov]
+    m.vec[reads.corrected < 0, reads.corrected := min.cov]
+
+    if (blacklist){
+        blacklist.pon =  readRDS(paste0(burnin.samples.path, "/blacklist.rds"))
+        m.vec$blacklisted = blacklist.pon$blacklisted
+        m.vec[blacklisted == TRUE, reads.corrected := NA]
+        m.vec = na.omit(m.vec)
+    }
+
     m.vec[, reads.corrected := log(reads.corrected)]
-    invisible(lapply(names(m.vec),function(.name) set(m.vec, which(is.infinite(m.vec[[.name]])), j = .name,value = 0)))
-    invisible(lapply(names(m.vec),function(.name) set(m.vec, which(is.na(m.vec[[.name]])), j = .name,value = 0)))
-    invisible(lapply(names(m.vec),function(.name) set(m.vec, which(is.nan(m.vec[[.name]])), j = .name,value = 0)))
-    return(m.vec)}
+
+    return(m.vec)
+}
 
 
 ##############################
@@ -270,63 +582,115 @@ prep_cov = function(m.vec = m.vec){
 ##############################
 #' @name start_wash_cycle
 #'
-#' @title function begins the online rPCA process and parallelizes the chromosmes for speed.  
-#' @description function begins the online rPCA process and parallelizes the chromosmes for speed.  
+#' @title function begins the online rPCA process. Use this function if you performed batch rPCA on samples as whole withiout dividing into chromosomes.For exomes and whole genomes where number of normal samples are small (<=100).  
+#' @description function begins the online rPCA process.  
 #' It is the wrapper that takes in GRanges and outputs GRanges with decomposition 
 #' 
-#' @param cov GRanges object containig the GC corrected cov data outputed from fragCounter. Needs metadata with header "reads.corrected"
-#' @param mc.cores interger (default == 1). Number of cores to use for parallelization
-#' @param burnin.samples.path string. Path to burnin samples for each chromosome
-#' @param whole_genome boolean (default = TRUE). For processing chromosome or whole genome
-#' @param chr string. if a single chromosome is to be processed, name of chromosome. Requires whole_genome = FALSE
+#' @param cov GRanges object containig the GC corrected cov data outputed from fragCounter. Needs metadata with header "reads.corrected".
+#' 
+#' @param mc.cores interger (default == 1). Number of cores to use for parallelization.
+#' 
+#' @param detergent.pon.path string. Path to pon/detergent genrated using normal samples.
+#' 
+#' @param whole_genome boolean (default = TRUE). For this function always set this parameter to TRUE.
+#' 
+#' @param use.blacklist boolean (default = FALSE). Whether to exclude off-target markers in case of Exomes or targeted sequqnecing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not.
+#'
+#' @param germline.filter boolean (default == TRUE). If germline markers need to be removed from decomposition.
+#'
+#' @param germline.file character (default == NA). Path to file with germline markers.
+#' 
+#' @param verbose boolean (default == TRUE). Outputs progress.
+#'
+#' @param chr integer (default == NA). Depricated. Can be used to decompose a single chromosome.
+#' 
 #' @export
+#' 
 #' @return GRange object with decomposition
 #' @author Aditya Deshpande
 
-start_wash_cycle = function(cov, mc.cores = 1, burnin.samples.path = NA, verbose = TRUE, chr = NA, whole_genome = TRUE){
-    if (whole_genome == TRUE){
-        chr.nm = c(as.character(1:22), "X", "Y")}
-    else {chr.nm = chr}
-    ##print(chr.nm)
-    chr.list = mclapply(chr.nm, function(x){
-        if(verbose == TRUE){
-            message("Loading burnins")}
-        if (is.na(burnin.samples.path)){
-            stop('Need burnin files to procced')}
-        rpca.1 = readRDS(paste0(burnin.samples.path, "/rpca.burnin.chr", x, ".rds"))
-        if(verbose == TRUE){
-            message(paste0("Let's begin, this is chr", x))}
-        m.vec = prep_cov(cov)
-        m.vec = m.vec[seqnames == x]
-        m.vec = as.matrix(m.vec$reads.corrected)
-        L.burnin = rpca.1$L
-        S.burnin = rpca.1$S
-        r = rpca.1$k
-        U.hat = rpca.1$U.hat
-        V.hat = rpca.1$V.hat
-        sigma.hat = rpca.1$sigma.hat
-        decomposed = wash_cycle(m.vec = m.vec, L.burnin = L.burnin, S.burnin = S.burnin, r = r, U.hat = U.hat, V.hat = V.hat, sigma.hat = sigma.hat)
-        if (verbose == TRUE){
-            message("combining matrices with gRanges")}
-        cov = gr2dt(cov)
-        cov = cov[seqnames == x]
-        cov = cbind(decomposed[[2]], cov)
-        colnames(cov)[1] = 'S'
-        cov[reads.corrected == 0, S := 0]
-        cov[is.na(reads.corrected), S := NA]
-        cov[, S1 := exp(S)]
-        cov = cbind(decomposed[[1]], cov)
-        colnames(cov)[1] = 'L'
-        cov[reads.corrected == 0, L := 0]
-        cov[is.na(reads.corrected), L := NA]
-        cov[, L1 := exp(L) ]
-        cov[, log.reads := log(reads.corrected)]
-        cov[is.infinite(log.reads), log.reads := NA]
-        return(cov)}, mc.cores = mc.cores, mc.preschedule = FALSE)
 
-    results = rbindlist(chr.list, fill = T)
-    results = dt2gr(results)
-    return(results)}
+
+start_wash_cycle = function(cov, mc.cores = 1, detergent.pon.path = NA, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = TRUE, germline.file = NA){
+
+    if(verbose == TRUE){
+        message("Loading PON a.k.a detergent from path provided")
+    }
+
+    if (is.na(detergent.pon.path)){
+        stop('Need pon/detergent file to procced. Use prepare_detergent() command')
+    }
+
+    rpca.1 = readRDS(paste0(detergent.pon.path, "/detergent.rds"))
+    
+    if(verbose == TRUE){
+        message(paste0("Let's begin, this is whole exome/genome"))
+    }
+
+    if (germline.filter & is.na(germline.file)){
+        stop("If germiline.filter is set to TRUE, provide path to germline marker file")
+    }
+    
+    m.vec = prep_cov(cov, blacklist = use.blacklist, burnin.samples.path = detergent.pon.path)
+    m.vec = as.matrix(m.vec$reads.corrected)
+    L.burnin = rpca.1$L
+    S.burnin = rpca.1$S
+    r = rpca.1$k
+    U.hat = rpca.1$U.hat
+    V.hat = rpca.1$V.hat
+    sigma.hat = rpca.1$sigma.hat
+
+    if(verbose == TRUE){
+        message("Initializing")
+    }
+
+    decomposed = wash_cycle(m.vec = m.vec, L.burnin = L.burnin, S.burnin = S.burnin, r = r, U.hat = U.hat, V.hat = V.hat, sigma.hat = sigma.hat)
+    
+    if (verbose == TRUE){
+        message("Combining matrices with gRanges")
+    }
+
+    cov = gr2dt(cov)
+    cov[, median.chr := median(.SD$reads.corrected, na.rm = T), by = seqnames]
+    cov[is.na(reads.corrected), reads.corrected := median.chr]
+    cov[is.infinite(reads.corrected), reads.corrected := median.chr]
+
+    if (use.blacklist){
+        blacklist.pon =  readRDS(paste0(detergent.pon.path, "/blacklist.rds"))
+        cov$blacklisted = blacklist.pon$blacklisted
+        cov[blacklisted == TRUE, reads.corrected := NA]
+        cov = na.omit(cov)
+    }
+    
+    setnames(cov, "reads.corrected", "reads.corrected.FC")
+    cov = cbind(decomposed[[2]], cov)
+    colnames(cov)[1] = 'reads.corrected.log'
+    cov[is.na(reads.corrected.FC), reads.corrected.log := NA]
+    cov[, reads.corrected := exp(reads.corrected.log)]
+    cov[reads.corrected.FC == 0, reads.corrected := 0]
+    cov[is.na(reads.corrected.FC), reads.corrected := NA]
+    cov = cbind(decomposed[[1]], cov)
+    colnames(cov)[1] = 'L'
+    cov[is.na(reads.corrected.FC), L := NA]
+    cov[, L1 := exp(L) ]
+    cov[reads.corrected.FC == 0, L1 := 0]
+    cov[is.na(reads.corrected.FC), L1 := NA]
+    cov[, log.reads := log(reads.corrected.FC)]
+    cov[is.infinite(log.reads), log.reads := NA]
+
+    if (germline.filter){
+        germ.file = readRDS(germline.filter)
+        cov$germline.status = germ.file$germline.status
+        cov[germline.status == TRUE, reads.corrected := NA]
+        cov[germline.status == TRUE, reads.corrected.log := NA]
+        cov = na.omit(cov)
+    }
+
+    cov = dt2gr(cov)
+    return(cov)
+}
+
+
 
 
     

@@ -5,7 +5,7 @@
 \title{function to perform online rPCA descomposition}
 \usage{
 wash_cycle(m.vec, L.burnin, S.burnin, r, N, U.hat, V.hat, sigma.hat,
-  lambda1 = NA, lambda2 = NA, decomp = FALSE, verbose = TRUE)
+  lambda1 = NA, lambda2 = NA, verbose = TRUE)
 }
 \arguments{
 \item{m.vec}{numeric vector of length m. Vector of GC corrected coverage data of sample in question}
@@ -24,9 +24,11 @@ wash_cycle(m.vec, L.burnin, S.burnin, r, N, U.hat, V.hat, sigma.hat,
 
 \item{sigma.hat}{numeric vector of length r. Singular values of L.burnin}
 
-\item{lambda1, }{lambda2 integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))}
+\item{lambda1, }{integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))}
 
-\item{decomp}{boolean (default = FALSE). If TRUE, carry batch rPCA decomposition on N matrix}
+\item{lambda2, }{integer. Tuning parameter (default = 1/(sqrt(no. of markers in input vector))}
+
+\item{verbose}{boolean (default == TRUE). Outputs progress.}
 }
 \value{
 S and L numeric vectors each of length m. Vectors for sample in question

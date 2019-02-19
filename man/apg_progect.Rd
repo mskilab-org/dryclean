@@ -22,7 +22,6 @@ list with s and v vectors
 \description{
 project new sample into the burnin space
 solving projection by Accelerated Proximal Gradient
-min_{v, s} 0.5*|m-Uv-s|_2^2 + 0.5*lambda1*|v|^2 + lambda2*|s|_1
 }
 \author{
 Aditya Deshpande
