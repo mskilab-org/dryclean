@@ -43,8 +43,12 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @param choose.by.clustering boolean (default == FALSE). Clusters normal samples based on the genomic background and takes a random sample from within the clusters.
 #' 
 #' @param number.of.samples interger (default == 50). If choose.by.clustering == TRUE, this is the number of clusters at which to cut tree.
+#'
+#' @param tolerance numeric (default == 0.0001). Tolerance for error for batch rPCA. We suggest keeping this value.
 #' 
-#' @param path.to.save charater (default == NA). Path to save the PON created.
+#' @param save.pon boolean (default == FALSE). If PON needs to be saved.
+#' 
+#' @param path.to.save charater (default == NA). Path to save the PON created if save.pon == TRUE.
 #' 
 #' @param num.cores interger (default == 1). Number of cores to use for parallelization
 #'
@@ -74,7 +78,7 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @author Aditya Deshpande
 
 
-prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, verbose = TRUE, path.to.save = NA, num.cores = 1){
+prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001){
     
     if (verbose){
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
@@ -84,7 +88,7 @@ prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.rand
         stop("Need a table with paths to normal samples to create a PON")
     }
 
-    if (is.na(path.to.save)){
+    if (is.na(path.to.save) & save.pon == TRUE){
         stop("Need a path to save decomposed PON")
     }
 
@@ -149,10 +153,10 @@ prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.rand
 
         mat.sub.t = as.matrix(mat.sub.t)
         gc()
-        mat.sub.t = Matrix(mat.sub.t)
-        gc()
+        ##mat.sub.t = Matrix(mat.sub.t)
+        ##gc()
 
-        rpca.mat = rrpca(mat.sub.t, trace = F)
+        rpca.mat = rrpca(mat.sub.t, tol = tolerance, trace = F)
 
         rm(mat.sub.t)
         gc()
@@ -222,7 +226,7 @@ prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.rand
     mat.bind.t = as.matrix(mat.bind.t)
     gc()
 
-    detergent = rrpca(mat.bind.t, trace = F, tol = 0.0001)
+    detergent = rrpca(mat.bind.t, trace = F, tol = tolerance)
 
     rm(mat.bind.t)
     gc()
@@ -236,7 +240,9 @@ prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.rand
         message("Finished making the PON or detergent and saving it to the path provided")
     }
 
-    saveRDS(detergent, paste0(path.to.save, "/detergent.rds"))
+    if (save.pon){
+        saveRDS(detergent, paste0(path.to.save, "/detergent.rds"))
+    }
     
     return(detergent)
 }
@@ -259,8 +265,10 @@ prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.rand
 #' @param signal.thresh numeric (default == 0.5). This is the threshold to be used to identify an amplification (markers with signal intensity > 0.5) or deletions (markers with signal intensity < -0.5) in log space from dryclean outputs.
 #'
 #' @param pct.thresh numeric (default == 0.98). Proportion of samples in which a given marker is free of germline event.
+#'
+#' @param save.grm boolean (default == FALSE). If the germline list needs to be saved.     
 #' 
-#' @param path.to.save charater (default == NA). Path to save the germline list created.
+#' @param path.to.save charater (default == NA). Path to save the germline list created if save.grm == TRUE.
 #' 
 #' @param num.cores interger (default == 1). Number of cores to use for parallelization.
 #'
@@ -270,7 +278,7 @@ prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.rand
 #' 
 #' @author Aditya Deshpande
 
-identify_germline = function(normal.table.path = NA, signal.thresh = 0.5, pct.thresh = 0.98, verbose = TRUE, path.to.save = NA, num.cores = 1){
+identify_germline = function(normal.table.path = NA, signal.thresh = 0.5, pct.thresh = 0.98, verbose = TRUE, save.grm = FALSE, path.to.save = NA, num.cores = 1){
 
     if (verbose){
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
@@ -280,7 +288,7 @@ identify_germline = function(normal.table.path = NA, signal.thresh = 0.5, pct.th
         stop("Need a table with paths to decomposed normal samples to identify germline events")
     }
     
-    if (is.na(path.to.save)){
+    if (is.na(path.to.save) & save.grm == TRUE){
         stop("Need a path to save identified germline events")
     }
 
@@ -315,8 +323,8 @@ identify_germline = function(normal.table.path = NA, signal.thresh = 0.5, pct.th
     
     mat.bind.t[, germline.status := ifelse(black_list_pct > pct.thresh, FALSE, TRUE)]
 
-    if (nrow(mat.bind.t[germline.status == FALSE]) < 0.6 * nrow(mat.bind.t)){
-        warning("More than 40% markers classified as germline, consider adjusting thresholds.")
+    if (nrow(mat.bind.t[germline.status == FALSE]) < 0.5 * nrow(mat.bind.t)){
+        warning("More than 50% markers classified as germline, consider adjusting thresholds.")
     }
     
     template = readRDS(normal.table[1, normal_cov])
@@ -331,7 +339,11 @@ identify_germline = function(normal.table.path = NA, signal.thresh = 0.5, pct.th
         message("Finished identifying germline markers based pn thresholds provided and saving it to the path provided")
     }
 
-    saveRDS(template, paste0(path.to.save, "/germline.markers.rds"))
+    if (save.grm){
+        saveRDS(template, paste0(path.to.save, "/germline.markers.rds"))
+    }
+
+    return(template)
 
 }
 
@@ -621,7 +633,7 @@ start_wash_cycle = function(cov, mc.cores = 1, detergent.pon.path = NA, verbose 
         stop('Need pon/detergent file to procced. Use prepare_detergent() command')
     }
 
-    rpca.1 = readRDS(paste0(detergent.pon.path, "/detergent.rds"))
+    rpca.1 = readRDS(detergent.pon.path)
     
     if(verbose == TRUE){
         message(paste0("Let's begin, this is whole exome/genome"))

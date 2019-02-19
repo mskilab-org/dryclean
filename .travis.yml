@@ -23,7 +23,7 @@ before_install:
     - chmod 755 ./travis-tool.sh
 
 script:
-- travis_wait 30 ./travis-tool.sh run_tests
+- travis_wait 90 ./travis-tool.sh run_tests
 
 
 after_failure:

@@ -6,8 +6,8 @@
 that will be used for online decomposition}
 \usage{
 identify_germline(normal.table.path = NA, signal.thresh = 0.5,
-  pct.thresh = 0.98, verbose = TRUE, path.to.save = NA,
-  num.cores = 1)
+  pct.thresh = 0.98, verbose = TRUE, save.grm = FALSE,
+  path.to.save = NA, num.cores = 1)
 }
 \arguments{
 \item{normal.table.path}{character path to data.table containing two columns "sample", "normal_cov" and additional column "decomposed_cov" that contains drycleaned normal sample outputs. See manual for details.}
@@ -18,7 +18,9 @@ identify_germline(normal.table.path = NA, signal.thresh = 0.5,
 
 \item{verbose}{boolean (default == TRUE). Outputs progress.}
 
-\item{path.to.save}{charater (default == NA). Path to save the germline list created.}
+\item{save.grm}{boolean (default == FALSE). If the germline list needs to be saved.}
+
+\item{path.to.save}{charater (default == NA). Path to save the germline list created if save.grm == TRUE.}
 
 \item{num.cores}{interger (default == 1). Number of cores to use for parallelization.}
 }

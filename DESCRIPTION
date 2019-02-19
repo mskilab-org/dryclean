@@ -9,7 +9,6 @@ Depends: R (>= 3.3.0),
     data.table (>= 1.10)
 Imports: 
     gUtils,
-    data.table,
     Matrix,
     rsvd,
     GenomicRanges,

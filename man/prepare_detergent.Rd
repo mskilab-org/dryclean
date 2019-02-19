@@ -7,8 +7,8 @@ that will be used for online decomposition}
 \usage{
 prepare_detergent(normal.table.path = NA, use.all = TRUE,
   choose.randomly = FALSE, choose.by.clustering = FALSE,
-  number.of.samples = 50, verbose = TRUE, path.to.save = NA,
-  num.cores = 1)
+  number.of.samples = 50, save.pon = FALSE, path.to.save = NA,
+  verbose = TRUE, num.cores = 1, tolerance = 1e-04)
 }
 \arguments{
 \item{normal.table.path}{character path to data.table containing two columns "sample" and "normal_cov". See manual for details}
@@ -21,11 +21,15 @@ prepare_detergent(normal.table.path = NA, use.all = TRUE,
 
 \item{number.of.samples}{interger (default == 50). If choose.by.clustering == TRUE, this is the number of clusters at which to cut tree.}
 
+\item{save.pon}{boolean (default == FALSE). If PON needs to be saved.}
+
+\item{path.to.save}{charater (default == NA). Path to save the PON created if save.pon == TRUE.}
+
 \item{verbose}{boolean (default == TRUE). Outputs progress.}
 
-\item{path.to.save}{charater (default == NA). Path to save the PON created.}
-
 \item{num.cores}{interger (default == 1). Number of cores to use for parallelization}
+
+\item{tolerance}{numeric (default == 0.0001). Tolerance for error for batch rPCA. We suggest keeping this value.}
 }
 \value{
 \code{prepare_detergent} returns a list containing the following components:
