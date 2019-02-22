@@ -5,7 +5,7 @@
 
 ![dryclean](inst/extdata/DNAhanger.png)
 
-![workflow](inst/extdata/Workflow.png)
+![workflow](inst/extdata/WorkflowDR.pdf)
 
 ### <font color=black> Robust PCA based method to de-noise genomic coverage data.</font>
 
