@@ -77,7 +77,8 @@ test_that("start_wash_cycle", {
     sample.1 = readRDS(sample.1.path)
     expect_error(start_wash_cycle(sample.1))
     strt = start_wash_cycle(cov = sample.1, detergent.pon.path = detergent.path, whole_genome = TRUE, chr = NA, germline.filter = FALSE)
-    expect_true(identical(colnames(values(strt)), c("L", "reads.corrected.log","reads.corrected.FC", "median.chr", "reads.corrected", "L1", "log.reads")))
+    ##print(colnames(values(strt)))
+    expect_true(identical(colnames(values(strt)), c("background.log", "foreground.log","input.read.counts", "median.chr", "foreground", "background", "log.reads")))
     expect_error(start_wash_cycle(samp))
 })
 

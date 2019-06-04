@@ -20,7 +20,7 @@
 #' @importFrom utils globalVariables
  ##########@import rrpca.mod.R
 
-globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted", "decomposed_cov", "germline.status", "log.reads", "mclapply", "median.chr", "normal_cov", "reads.corrected", "reads.corrected.FC", "reads.corrected.log", ".N", ".SD", ":="))
+globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted", "decomposed_cov", "germline.status", "log.reads", "mclapply", "median.chr", "normal_cov", "foreground", "input.read.counts", "foreground.log", "reads.corrected", "background", "background.log", ".N", ".SD", ":="))
 
 ##############################
 ## prepare_detergent
@@ -299,7 +299,7 @@ identify_germline = function(normal.table.path = NA, signal.thresh = 0.5, pct.th
         this.cov = tryCatch(readRDS(normal.table[nm, decomposed_cov]), error = function(e) NULL)
         if (!is.null(this.cov)){
             this.cov = gr2dt(this.cov)
-            reads = this.cov[, .(reads.corrected.log)]
+            reads = this.cov[, .(foreground.log)] ## addy
             reads = transpose(reads)
         } else {reads = data.table(NA)}
         return(reads)}, mc.cores = num.cores)
@@ -664,37 +664,37 @@ start_wash_cycle = function(cov, mc.cores = 1, detergent.pon.path = NA, verbose 
 
     cov = gr2dt(cov)
     cov[, median.chr := median(.SD$reads.corrected, na.rm = T), by = seqnames]
-    cov[is.na(reads.corrected), reads.corrected := median.chr]
-    cov[is.infinite(reads.corrected), reads.corrected := median.chr]
 
     if (use.blacklist){
+        cov[is.na(reads.corrected), reads.corrected := median.chr]
+        cov[is.infinite(reads.corrected), reads.corrected := median.chr]
         blacklist.pon =  readRDS(paste0(detergent.pon.path, "/blacklist.rds"))
         cov$blacklisted = blacklist.pon$blacklisted
         cov[blacklisted == TRUE, reads.corrected := NA]
         cov = na.omit(cov)
     }
     
-    setnames(cov, "reads.corrected", "reads.corrected.FC")
+    setnames(cov, "reads.corrected", "input.read.counts")
     cov = cbind(decomposed[[2]], cov)
-    colnames(cov)[1] = 'reads.corrected.log'
-    cov[is.na(reads.corrected.FC), reads.corrected.log := NA]
-    cov[, reads.corrected := exp(reads.corrected.log)]
-    cov[reads.corrected.FC == 0, reads.corrected := 0]
-    cov[is.na(reads.corrected.FC), reads.corrected := NA]
+    colnames(cov)[1] = 'foreground.log'
+    cov[is.na(input.read.counts), foreground.log := NA]
+    cov[, foreground := exp(foreground.log)]
+    cov[input.read.counts == 0, foreground := 0]
+    cov[is.na(input.read.counts), foreground := NA]
     cov = cbind(decomposed[[1]], cov)
-    colnames(cov)[1] = 'L'
-    cov[is.na(reads.corrected.FC), L := NA]
-    cov[, L1 := exp(L) ]
-    cov[reads.corrected.FC == 0, L1 := 0]
-    cov[is.na(reads.corrected.FC), L1 := NA]
-    cov[, log.reads := log(reads.corrected.FC)]
+    colnames(cov)[1] = 'background.log'
+    cov[is.na(input.read.counts), background.log := NA]
+    cov[, background := exp(background.log) ]
+    cov[input.read.counts == 0, background := 0]
+    cov[is.na(input.read.counts), background := NA]
+    cov[, log.reads := log(input.read.counts)]
     cov[is.infinite(log.reads), log.reads := NA]
 
     if (germline.filter){
         germ.file = readRDS(germline.filter)
         cov$germline.status = germ.file$germline.status
-        cov[germline.status == TRUE, reads.corrected := NA]
-        cov[germline.status == TRUE, reads.corrected.log := NA]
+        cov[germline.status == TRUE, foreground := NA]
+        cov[germline.status == TRUE, foreground.log := NA]
         cov = na.omit(cov)
     }
 
