@@ -224,7 +224,7 @@ head(cov_out)
 ```R
 
 GRanges object with 6 ranges and 12 metadata columns:
-      seqnames  ranges  strand |      L                 reads.corrected.log
+      seqnames  ranges  strand |      background.log      foreground.log
          <Rle> <IRanges> <Rle> |      <numeric>             <numeric>
   [1]        22 1-3          * |     0.169769767795501 -0.0568088592719299
   [2]        22 3-5          * |    0.0177158854407206  0.0770640446340152
@@ -232,7 +232,7 @@ GRanges object with 6 ranges and 12 metadata columns:
   [4]        22 7-9          * |     0.230039681056936  -0.100959892306004
   [5]        22 9-11         * | -0.000366098004722278 -0.0812780098385511
   [6]        22 11-13        * |     0.135769072540305  0.0878847580129722
-          reads                gc       map reads.corrected.FC
+          reads                gc       map   input.read.counts
       <numeric>         <numeric> <numeric>          <numeric>
   [1]       762 0.612756264236902         1   2.78713582604055
   [2]       324 0.587301587301587         1    1.1277123686483
@@ -240,7 +240,7 @@ GRanges object with 6 ranges and 12 metadata columns:
   [4]      1131 0.568181818181818         1   3.81814927898723
   [5]       254 0.592592592592593         1  0.890949237364552
   [6]       314 0.697819314641745         1   2.43451610256352
-             median.chr blacklisted   reads.corrected                L1
+             median.chr blacklisted      foreground        background
               <numeric>   <logical>         <numeric>         <numeric>
   [1] 0.608371537098667       FALSE 0.944774637021039  1.18503198738368
   [2] 0.608371537098667       FALSE  1.08011124950716   1.0178737425542
@@ -264,16 +264,16 @@ GRanges object with 6 ranges and 12 metadata columns:
 
 
 The output has following metadata fields: 
-1. L: This is the L low ranked vector after decomposition and represent the background noise separated by dryclean in the log space
-2. reads.corrected.log: THis is the main output. The S vector with thr inferred copy number signal separated by dryclean in the log space
+1. background.log: This is the L low ranked vector after decomposition and represent the background noise separated by dryclean in the log space
+2. foreground.log: The S vector with the inferred copy number signal separated by dryclean, that forms foreground, in the log space
 3. reads: Raw read counts
 4. gc: GC score
 5. map: mappability score
-6. reads.corrected.FC: This is the fragCounter input in lineat space
+6. input.read.counts: This is the fragCounter input in linear space
 7. median.chr: median chromosome signal
 8. blacklisted: if off target marker list is available and used
-9. reads.corrected: This is the main output. S vector in read count/ratio space
-10. L1: This is the L low ranked vector after decomposition and represent the background noise separated by dryclean in read count/ratio space 
+9. foreground: Foreground signal, that forms SCNAs (S vector) in read count/ratio space
+10. background: This is the L low ranked vector after decomposition and represent the background noise separated by dryclean in read count/ratio space 
 11. log.reads: log of the fragCounter signal
 12. germline.blk: germline marker based on the inferred germline function
 
