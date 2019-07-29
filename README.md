@@ -178,7 +178,7 @@ grm = identify_germline(normal.table.path = "~/git/dryclean/inst/extdata/normal_
 
 Now we are ready for tumor decomposition
 
-###  <font color=black> 3. Running `dryclean` on tumor sample </font>
+###  <font color=black> 3. Running `dryclean` on tumor sample within R</font>
 
 Following is a dummy example. The data diretory has a dummy coverage gRanges object which requires "reads.corrected" field 
 
@@ -277,5 +277,97 @@ The output has following metadata fields:
 11. log.reads: log of the fragCounter signal
 12. germline.blk: germline marker based on the inferred germline function
 
+
+###  <font color=black> 3. Running `dryclean` on tumor sample from command line</font>
+
+```R
+./drcln -i inst/extdata/samp1.rds -p inst/extdata/detergent.50.rds 
+
+```
+
+```R
+Rprofile Loading
+Rprofile Finished Loading
+
+
+▓█████▄   ██▀███  ██   ██▓ ▄████▄   ██▓    ▓█████ ▄▄▄       ███▄    █
+ ██▀ ██▌ ▓██   ██  ██  ██  ██▀ ▀█  ▓██▒    ▓█   ▀ ████▄     ██ ▀█   █
+░██   █▌ ▓██ ░▄█    ██ ██  ▓█    ▄  ██░    ░███   ██  ▀█▄   ██  ▀█ ██▒
+░▓█▄   ▌ ▒██▀▀█▄   ░ ▐██▓ ▒▓▓▄ ▄██▒ ██░    ░▓█  ▄ ██▄▄▄▄█   ██▒  ▐▌██▒
+░▒████▓  ░██▓  ██  ░ ██▒    ▓███▀ ░░█████ ▒█████▒ █     █▒ ██░   ▓██░
+ ▒ ▓  ▒  ░  ▓ ░▒▓░  ██    ░ ░▒ ▒  ░░ ▒░▓  ░░░ ▒░ ░▒▒   ▓▒█░░ ▒░   ▒ ▒
+ ░ ▒  ▒    ░▒ ░  ░  ░░▒░   ░  ▒   ░ ░ ▒  ░ ░ ░  ░ ▒   ▒▒ ░░ ░░   ░ ▒░
+ ░ ░  ░    ░░   ░   ░  ░░  ░          ░ ░  ░    ░    ░   ▒      ░   ░ ░
+   ░        ░     ░ ░     ░ ░          ░  ░   ░  ░     ░  ░     ░   ░
+ ░               ░ ░     ░       ░    ░     ░     ░      ░     ░ 
+
+
+(Let's dryclean the genomes!)
+
+Loading PON a.k.a detergent from path provided
+Let's begin, this is whole exome/genome
+Initializing
+Using the detergent provided to start washing
+lambdas calculated
+Here begins the wash cycle
+calculating A and B
+calculating v and s
+Updating subspace
+Combining matrices with gRanges
+Giddy Up!
+
+```
+
+All the options and usage is as follows
+
+```R
+./drcln -h
+```
+
+```R
+Rprofile Loading
+Rprofile Finished Loading
+Usage: ./drcln [options]
+
+
+Options:
+	-i INPUT, --input=INPUT
+		Path to cov.rds file, fragCounter output for sample under consideration
+
+	-p PON, --pon=PON
+		Path to Panel Of Normal (PON) on which batch rPCA have been run. Within the file should be L, S matrices, estimated rank for burnin samples and svd decomposition matrices for the same
+
+	-m NAME, --name=NAME
+		Sample / Individual name
+
+	-b BLACKLIST, --blacklist=BLACKLIST
+		blacklisted makers
+
+	-w WHOLEGENOME, --wholeGenome=WHOLEGENOME
+		If TRUE then it will process all chromosomes and parallelize it
+
+	-C CHROMOSOME, --chromosome=CHROMOSOME
+		If wholeGenome is FALSE, specify the chromosome to process
+
+	-g GERMLINE.FILTER, --germline.filter=GERMLINE.FILTER
+		If PON based germline filter is to be used for removing some common germline events, If set to TRUE, give path to germline annotated file
+
+	-f GERMLINE.FILE, --germline.file=GERMLINE.FILE
+		Path to file annotated with germline calls, if germline.filter == TRUE
+
+	-c CORES, --cores=CORES
+		How many cores to use
+
+	-o OUTDIR, --outdir=OUTDIR
+		output directory
+
+	-k COLLAPSE, --collapse=COLLAPSE
+		collapse 200bp fragCounter to 1kb
+
+	-h, --help
+		Show this help message and exit
+
+
+```
 
 

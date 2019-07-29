@@ -1,0 +1,87 @@
+#!/usr/bin/env Rscript
+library(optparse)
+
+dr.str = "
+
+▓█████▄   ██▀███  ██   ██▓ ▄████▄   ██▓    ▓█████ ▄▄▄       ███▄    █
+ ██▀ ██▌ ▓██   ██  ██  ██  ██▀ ▀█  ▓██▒    ▓█   ▀ ████▄     ██ ▀█   █
+░██   █▌ ▓██ ░▄█    ██ ██  ▓█    ▄  ██░    ░███   ██  ▀█▄   ██  ▀█ ██▒
+░▓█▄   ▌ ▒██▀▀█▄   ░ ▐██▓ ▒▓▓▄ ▄██▒ ██░    ░▓█  ▄ ██▄▄▄▄█   ██▒  ▐▌██▒
+░▒████▓  ░██▓  ██  ░ ██▒    ▓███▀ ░░█████ ▒█████▒ █     █▒ ██░   ▓██░
+ ▒ ▓  ▒  ░  ▓ ░▒▓░  ██    ░ ░▒ ▒  ░░ ▒░▓  ░░░ ▒░ ░▒▒   ▓▒█░░ ▒░   ▒ ▒
+ ░ ▒  ▒    ░▒ ░  ░  ░░▒░   ░  ▒   ░ ░ ▒  ░ ░ ░  ░ ▒   ▒▒ ░░ ░░   ░ ▒░
+ ░ ░  ░    ░░   ░   ░  ░░  ░          ░ ░  ░    ░    ░   ▒      ░   ░ ░
+   ░        ░     ░ ░     ░ ░          ░  ░   ░  ░     ░  ░     ░   ░
+ ░               ░ ░     ░       ░    ░     ░     ░      ░     ░ 
+
+
+(Let's dryclean the genomes!)\n"
+
+
+
+
+if (!exists('opt'))
+    {
+        option_list = list(
+            make_option(c("-i", "--input"), type = "character", help = "Path to cov.rds file, fragCounter output for sample under consideration"),
+            make_option(c("-p", "--pon"), type = "character", help = "Path to Panel Of Normal (PON) on which batch rPCA have been run. Within the file should be L, S matrices, estimated rank for burnin samples and svd decomposition matrices for the same"),
+            make_option(c("-m", "--name"), default = TRUE, type = "character", help = "Sample / Individual name"),
+            make_option(c("-b", "--blacklist"), default = FALSE, type = "logical", help = "blacklisted makers"),
+            make_option(c("-w", "--wholeGenome"), default = TRUE, type = "logical", help = "If TRUE then it will process all chromosomes and parallelize it"),
+            make_option(c("-C", "--chromosome"), default = NA, type = "character", help = "If wholeGenome is FALSE, specify the chromosome to process"),
+            make_option(c("-g", "--germline.filter"), default = FALSE, type = "logical", help = "If PON based germline filter is to be used for removing some common germline events, If set to TRUE, give path to germline annotated file"),
+            make_option(c("-f", "--germline.file"), default = NA, type = "character", help = "Path to file annotated with germline calls, if germline.filter == TRUE"),
+            make_option(c("-c", "--cores"), type = "integer", default = 10,  help = "How many cores to use"),
+            make_option(c("-o", "--outdir"), type = "character", default = './', help = "output directory"),
+            make_option(c("-k", "--collapse"), type = "logical", default = FALSE, help = "collapse 200bp fragCounter to 1kb")#,
+            #make_option(c("-l", "--libdir"), type = "character", help = "Directory containing this R file")
+            )
+
+        parseobj = OptionParser(option_list=option_list)
+        opt = parse_args(parseobj)
+
+        if ((is.null(opt$input)) | is.null(opt$pon))
+            stop(print_help(parseobj))
+
+        ##print(opt)
+
+        ##print(.libPaths())
+        options(error=function()traceback(2))
+
+        ## keep record of run
+        writeLines(paste(paste('--', names(opt), ' ', sapply(opt, function(x) paste(x, collapse = ',')), sep = '', collapse = ' '), sep = ''), paste(opt$outdir, 'cmd.args', sep = '/'))
+        saveRDS(opt, paste(opt$outdir, 'cmd.args.rds', sep = '/'))
+    }
+
+
+
+
+
+system(paste('mkdir -p',  opt$outdir))
+
+##############################
+suppressWarnings(suppressPackageStartupMessages(library(dryclean)))
+
+        message(dr.str)
+        
+        cov = readRDS(opt$input)
+        
+        if (opt$collapse == TRUE){
+            message("Collapsing bins to 1kb")
+            BINSIZE.ROUGH = 1e3
+            cov = gr2dt(cov)[!is.infinite(reads.corrected), .(reads.corrected = mean(reads.corrected, na.rm = TRUE)), by = .(seqnames, start = floor(start/BINSIZE.ROUGH)*BINSIZE.ROUGH+1)]
+            cov[, end := (start + BINSIZE.ROUGH) - 1]
+            cov = dt2gr(cov)
+        }
+        
+        this.out = start_wash_cycle(cov = cov, mc.cores = opt$cores,
+                                    detergent.pon.path = opt$pon,
+                                    verbose = TRUE, whole_genome = opt$wholeGenome,
+                                    chr = opt$chromosome, use.blacklist = opt$blacklist,
+                                    germline.filter = opt$germline.filter,
+                                    germline.file = opt$germline.file)
+        
+        saveRDS(this.out, paste0(opt$outdir, 'drycleaned.cov.rds'))
+        
+        message('Giddy Up!') 
+
