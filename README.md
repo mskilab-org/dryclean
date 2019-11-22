@@ -41,7 +41,7 @@ devtools::install_github('mskilab/dryclean')
 
 ## <font color=black> Tutorial </font>
 
-dryclean is a robust principal component analysis (rPCA) based method. dryclean uses a panel of normal (PON) samples to learn the landscape of both biological and technical noise in read depth data. dryclean then uses this landscape significantly reduce noise and artifacts in the signal for tumor samples. The input to the algorithm is GC amd mappability corrected read depth data from fragCounter. Refer to figure below.
+dryclean is a robust principal component analysis (rPCA) based method. dryclean uses a panel of normal (PON) samples to learn the landscape of both biological and technical noise in read depth data. dryclean then uses this landscape significantly reduce noise and artifacts in the signal for tumor samples. The input to the algorithm is GC amd mappability corrected read depth data from fragCounter that can be found [here]:https://github.com/mskilab/fragCounter .
 
 
 ![wkfl](inst/extdata/WorkflowDR.png)
