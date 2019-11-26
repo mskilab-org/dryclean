@@ -39,7 +39,7 @@ Install dryclean
 devtools::install_github('mskilab/dryclean')
 ```
 
-(after installing R package) Add fragCounter directory to PATH and test the executable 
+(after installing R package) Add dryclean directory to PATH and test the executable 
 
 ```{bash}
 $ export PATH=${PATH}:$(Rscript -e 'cat(paste0(installed.packages()["dryclean", "LibPath"], "/dryclean/extdata/"))')
