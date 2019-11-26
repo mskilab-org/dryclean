@@ -39,6 +39,13 @@ Install dryclean
 devtools::install_github('mskilab/dryclean')
 ```
 
+(after installing R package) Add fragCounter directory to PATH and test the executable 
+
+```{bash}
+$ export PATH=${PATH}:$(Rscript -e 'cat(paste0(installed.packages()["dryclean", "LibPath"], "/dryclean/extdata/"))')
+$ drcln -h ## to see the help message
+```
+
 ## <font color=black> Tutorial </font>
 
 dryclean is a robust principal component analysis (rPCA) based method. dryclean uses a panel of normal (PON) samples to learn the landscape of both biological and technical noise in read depth data. dryclean then uses this landscape significantly reduce noise and artifacts in the signal for tumor samples. The input to the algorithm is GC amd mappability corrected read depth data from fragCounter that can be found at: https://github.com/mskilab/fragCounter .
