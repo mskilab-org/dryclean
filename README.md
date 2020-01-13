@@ -163,7 +163,7 @@ normal_table_example
 
 
 <table>
-<thead><tr><th scope=col>sample</th><th scope=col>normal_cov</th><th scope=col>decompose_cov</th></tr></thead>
+<thead><tr><th scope=col>sample</th><th scope=col>normal_cov</th><th scope=col>decomposed_cov</th></tr></thead>
 <tbody>
 	<tr><td>samp1                        </td><td>~/git/dryclean/inst/extdata/samp1.rds               </td><td>~/git/dryclean/inst/extdata/decomp1.rd</td></tr> 
 	<tr><td>samp2                        </td><td>~/git/dryclean/inst/extdata/samp2.rds               </td><td>~/git/dryclean/inst/extdata/decomp2.rd</td></tr>
