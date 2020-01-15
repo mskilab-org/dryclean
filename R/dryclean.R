@@ -299,7 +299,7 @@ identify_germline = function(normal.table.path = NA, signal.thresh = 0.5, pct.th
         this.cov = tryCatch(readRDS(normal.table[nm, decomposed_cov]), error = function(e) NULL)
         if (!is.null(this.cov)){
             this.cov = gr2dt(this.cov)
-            reads = this.cov[, .(foreground.log)] ## addy
+            reads = this.cov[, .(foreground.log)] 
             reads = transpose(reads)
         } else {reads = data.table(NA)}
         return(reads)}, mc.cores = num.cores)
@@ -691,7 +691,7 @@ start_wash_cycle = function(cov, mc.cores = 1, detergent.pon.path = NA, verbose 
     cov[is.infinite(log.reads), log.reads := NA]
 
     if (germline.filter){
-        germ.file = readRDS(germline.filter)
+        germ.file = readRDS(germline.file)
         cov$germline.status = germ.file$germline.status
         cov[germline.status == TRUE, foreground := NA]
         cov[germline.status == TRUE, foreground.log := NA]
