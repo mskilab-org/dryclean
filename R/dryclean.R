@@ -213,7 +213,7 @@ prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.rand
     gc()
 
     mat.bind = rbindlist(mat.n, fill = T)
-    mat.bind = na.omit(mat.bind)
+    ## mat.bind = na.omit(mat.bind)
     mat.bind.t = transpose(mat.bind)
 
     rm(mat.bind)
