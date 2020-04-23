@@ -85,21 +85,21 @@ There are three ways to make the PON:
 
 
 ```R
-detergent = prepare_detergent(normal.table.path = "~/git/dryclean/inst/extdata/normal_table.rds", path.to.save = "~/git/dryclean/inst/extdata/", mc.cores = 1, use.all = TRUE)
+detergent = prepare_detergent(normal.table.path = "~/git/dryclean/inst/extdata/normal_table.rds", path.to.save = "~/git/dryclean/inst/extdata/", num.cores = 1, use.all = TRUE)
 ```
 
 2. Using random subset of normal samples availabble. 
 
 
 ```R
-detergent = prepare_detergent(normal.table.path = "~/git/dryclean/inst/extdata/normal_table.rds", path.to.save = "~/git/dryclean/inst/extdata/", mc.cores = 1, use.all = FALSE, choose.randomly = TRUE)
+detergent = prepare_detergent(normal.table.path = "~/git/dryclean/inst/extdata/normal_table.rds", path.to.save = "~/git/dryclean/inst/extdata/", num.cores = 1, use.all = FALSE, choose.randomly = TRUE)
 ```
 
 3. Cluster based approach. In order to keep the size of PON as small as possible but maximize the information in the PON. This is acheived by clustering the genomic background of normal samples and selecting normal samples from each cluster. Hierarchical clustering is used on L matrix after decomposing a small genomic region of all normal samples.
 
 
 ```R
-detergent = prepare_detergent(normal.table.path = "~/git/dryclean/inst/extdata/normal_table.rds", path.to.save = "~/git/dryclean/inst/extdata/", mc.cores = 1, use.all = FALSE, choose.by.clustering = TRUE)
+detergent = prepare_detergent(normal.table.path = "~/git/dryclean/inst/extdata/normal_table.rds", path.to.save = "~/git/dryclean/inst/extdata/", num.cores = 1, use.all = FALSE, choose.by.clustering = TRUE)
 ```
 
 
