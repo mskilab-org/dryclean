@@ -33,7 +33,7 @@ m.vec.path = system.file("extdata", "m.vec.rds", package = 'dryclean')
 
 test_that("prep_cov", {
     sample.1 = readRDS(sample.1.path)
-    pcov = prep_cov(m.vec = sample.1)
+    pcov = prep_cov(m.vec = sample.1, build = "hg19")
     expect_identical(class(pcov)[1], "data.table")
     expect_equal(dim(pcov)[1], 50)
 })

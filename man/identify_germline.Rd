@@ -5,9 +5,15 @@
 \title{This is first phase in preparing the Panel of Normals (PON)
 that will be used for online decomposition}
 \usage{
-identify_germline(normal.table.path = NA, signal.thresh = 0.5,
-  pct.thresh = 0.98, verbose = TRUE, save.grm = FALSE,
-  path.to.save = NA, num.cores = 1)
+identify_germline(
+  normal.table.path = NA,
+  signal.thresh = 0.5,
+  pct.thresh = 0.98,
+  verbose = TRUE,
+  save.grm = FALSE,
+  path.to.save = NA,
+  num.cores = 1
+)
 }
 \arguments{
 \item{normal.table.path}{character path to data.table containing two columns "sample", "normal_cov" and additional column "decomposed_cov" that contains drycleaned normal sample outputs. See manual for details.}

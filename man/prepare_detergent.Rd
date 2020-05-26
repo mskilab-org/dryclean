@@ -5,10 +5,19 @@
 \title{This is the frist stage and involves preparing the Panel of Normals (PON)
 that will be used for online decomposition}
 \usage{
-prepare_detergent(normal.table.path = NA, use.all = TRUE,
-  choose.randomly = FALSE, choose.by.clustering = FALSE,
-  number.of.samples = 50, save.pon = FALSE, path.to.save = NA,
-  verbose = TRUE, num.cores = 1, tolerance = 1e-04)
+prepare_detergent(
+  normal.table.path = NA,
+  use.all = TRUE,
+  choose.randomly = FALSE,
+  choose.by.clustering = FALSE,
+  number.of.samples = 50,
+  save.pon = FALSE,
+  path.to.save = NA,
+  verbose = TRUE,
+  num.cores = 1,
+  tolerance = 1e-04,
+  build = "hg19"
+)
 }
 \arguments{
 \item{normal.table.path}{character path to data.table containing two columns "sample" and "normal_cov". See manual for details}
@@ -30,6 +39,8 @@ prepare_detergent(normal.table.path = NA, use.all = TRUE,
 \item{num.cores}{interger (default == 1). Number of cores to use for parallelization}
 
 \item{tolerance}{numeric (default == 0.0001). Tolerance for error for batch rPCA. We suggest keeping this value.}
+
+\item{build}{genome build to define PAR region in chromosome X}
 }
 \value{
 \code{prepare_detergent} returns a list containing the following components:

@@ -4,9 +4,18 @@
 \alias{start_wash_cycle}
 \title{function begins the online rPCA process. Use this function if you performed batch rPCA on samples as whole withiout dividing into chromosomes.For exomes and whole genomes where number of normal samples are small (<=100).}
 \usage{
-start_wash_cycle(cov, mc.cores = 1, detergent.pon.path = NA,
-  verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE,
-  chr = NA, germline.filter = TRUE, germline.file = NA)
+start_wash_cycle(
+  cov,
+  mc.cores = 1,
+  detergent.pon.path = NA,
+  verbose = TRUE,
+  whole_genome = TRUE,
+  use.blacklist = FALSE,
+  chr = NA,
+  germline.filter = FALSE,
+  germline.file = NA,
+  build = "hg19"
+)
 }
 \arguments{
 \item{cov}{GRanges object containig the GC corrected cov data outputed from fragCounter. Needs metadata with header "reads.corrected".}
@@ -26,6 +35,8 @@ start_wash_cycle(cov, mc.cores = 1, detergent.pon.path = NA,
 \item{germline.filter}{boolean (default == TRUE). If germline markers need to be removed from decomposition.}
 
 \item{germline.file}{character (default == NA). Path to file with germline markers.}
+
+\item{build}{genome build to define PAR region in chromosome X}
 }
 \value{
 GRange object with decomposition

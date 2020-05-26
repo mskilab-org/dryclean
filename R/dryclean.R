@@ -7,7 +7,6 @@
 #' @importFrom data.table setkeyv
 #' @importFrom data.table setnames
 #' @importFrom data.table transpose
-#' @import Matrix 
 #' @import rsvd
 #' @importFrom gUtils gr2dt
 #' @importFrom gUtils dt2gr
@@ -18,9 +17,12 @@
 #' @importFrom stats na.omit
 #' @importFrom MASS ginv
 #' @importFrom utils globalVariables
-#' @import rrpca.mod.R
+#' @import gUtils   
 
-globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted", "decomposed_cov", "germline.status", "log.reads", "mclapply", "median.chr", "normal_cov", "foreground", "input.read.counts", "foreground.log", "reads.corrected", "background", "background.log", ".N", ".SD", ":="))
+globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted", "decomposed_cov", "germline.status", "log.reads", "mclapply", "median.chr", "normal_cov", "foreground", "input.read.counts", "foreground.log", "reads.corrected", "background", "background.log", ".N", ".SD", ":=", "median.idx", ".GRP", "reads.corrected.org"))
+
+
+
 
 ##############################
 ## prepare_detergent
@@ -53,6 +55,8 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @param num.cores interger (default == 1). Number of cores to use for parallelization
 #'
 #' @param verbose boolean (default == TRUE). Outputs progress.
+#'
+#' @param build genome build to define PAR region in chromosome X
 #' 
 #' @return \code{prepare_detergent} returns a list containing the following components:
 #' 
@@ -78,7 +82,7 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @author Aditya Deshpande
 
 
-prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001){
+prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, build = "hg19"){
     
     if (verbose){
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
@@ -153,10 +157,8 @@ prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.rand
 
         mat.sub.t = as.matrix(mat.sub.t)
         gc()
-        ##mat.sub.t = Matrix(mat.sub.t)
-        ##gc()
 
-        rpca.mat = rrpca(mat.sub.t, tol = tolerance, trace = F)
+        rpca.mat = rrpca.mod(mat.sub.t, tol = tolerance, trace = F)
 
         rm(mat.sub.t)
         gc()
@@ -191,11 +193,29 @@ prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.rand
         samp.final = normal.table
         setkey(samp.final, "sample")
     }
+
+    
+    message("Removing Y and balancing pre-decomposition")
+
+    if (build == "hg19"){
+        par = 2700000
+    } else if (build == "hg38"){
+        par = 2782000
+    } else {
+        stop("provide either hg19 or hg38 build")
+    }
     
     mat.n = mclapply(samp.final[, sample], function(nm){
         this.cov = tryCatch(readRDS(samp.final[nm, normal_cov]), error = function(e) NULL)
+        all.chr = c(as.character(1:22), "X")
         if (!is.null(this.cov)){
+            this.cov = this.cov %Q% (seqnames %in% all.chr)
             this.cov = gr2dt(this.cov)
+            setnames(this.cov, "reads.corrected", "reads.corrected.org")
+            this.cov[, median.idx := .GRP, by = seqnames]
+            this.cov[, median.idx := ifelse(seqnames == "X" & start < par, 24, median.idx)]
+            this.cov[, median.chr := median(reads.corrected.org, na.rm = T), by = median.idx]
+            this.cov[, reads.corrected := reads.corrected.org/median.chr]
             message(nm)
             reads = this.cov[, .(seqnames, reads.corrected)]
             reads[, median.chr := median(.SD$reads.corrected, na.rm = T), by = seqnames]            
@@ -226,7 +246,7 @@ prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.rand
     mat.bind.t = as.matrix(mat.bind.t)
     gc()
 
-    detergent = rrpca(mat.bind.t, trace = F, tol = tolerance)
+    detergent = rrpca.mod(mat.bind.t, trace = F, tol = tolerance)
 
     rm(mat.bind.t)
     gc()
@@ -278,7 +298,7 @@ prepare_detergent = function(normal.table.path = NA, use.all = TRUE, choose.rand
 #' 
 #' @author Aditya Deshpande
 
-identify_germline = function(normal.table.path = NA, signal.thresh = 0.5, pct.thresh = 0.98, verbose = TRUE, save.grm = FALSE, path.to.save = NA, num.cores = 1){
+identify_germline <- function(normal.table.path = NA, signal.thresh = 0.5, pct.thresh = 0.98, verbose = TRUE, save.grm = FALSE, path.to.save = NA, num.cores = 1){
 
     if (verbose){
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
@@ -362,7 +382,7 @@ identify_germline = function(normal.table.path = NA, signal.thresh = 0.5, pct.th
 #' @return numeric vector. Regularized vector y
 #' @author Aditya Deshpande
 
-thresh = function(x, mu){
+thresh <- function(x, mu){
     y = pmax(x - mu, 0, na.rm = TRUE)
     y = y + pmin(x + mu, 0, na.rm = TRUE)
     return(y)
@@ -386,7 +406,7 @@ thresh = function(x, mu){
 #' @return list with s and v vectors 
 #' @author Aditya Deshpande
 
-apg_project = function(m.vec, U, lambda1, lambda2){
+apg_project <- function(m.vec, U, lambda1, lambda2){
     q = dim(U)[1]
     p = dim(U)[2]
     v = matrix(0, p, 1)
@@ -402,7 +422,7 @@ apg_project = function(m.vec, U, lambda1, lambda2){
         v = UUt %*% (m.vec - s)
         s.old = s
         s = thresh(m.vec - (U %*% v), lambda2)
-        e = max(norm(v - v.old, "2"), norm(s - s.old, "2"))/q
+        e = max(norm(v - v.old, "F"), norm(s - s.old, "F"))/q
         if (e < 1e-6 || k > maxiter){
             converged = TRUE
         }
@@ -429,7 +449,7 @@ apg_project = function(m.vec, U, lambda1, lambda2){
 #' @return U (m  markers x n samples) numeric matrix. updated basis U of subspace
 #' @author Aditya Deshpande
 
-update_cols = function(U, A, B, lambda1){
+update_cols <- function(U, A, B, lambda1){
     r = dim(U)[2]
     A = A + (lambda1 * diag(r))
     for (i in 1:r){
@@ -441,6 +461,51 @@ update_cols = function(U, A, B, lambda1){
     }
     return(U)
 }
+
+
+##############################
+## balance_X
+##############################
+#' @name balance_X
+#'
+#' @title Balances X chr and takes PAR region under considersation
+#'
+#' @keywords internal
+#' 
+#' @param this.cov coverage input
+#'
+#' @param build genome build to define PAR region in chromosome X
+#' 
+#' @return median normalized X chromosome that takes care of single copy
+#' @author Aditya Deshpande
+
+balance_X <- function(this.cov, build = build){
+    
+    all.chr = c(as.character(1:22), "X")
+
+    if (build == "hg19"){
+        par = 2700000
+    } else if (build == "hg38"){
+        par = 2782000
+    } else {
+        stop("provide either hg19 or hg38 build")
+    }
+
+    this.cov = this.cov %Q% (seqnames %in% all.chr)
+    this.cov = gr2dt(this.cov)
+    setnames(this.cov, "reads.corrected", "reads.corrected.org")
+    this.cov[, median.idx := .GRP, by = seqnames]
+    this.cov[, median.idx := ifelse(seqnames == "X" & start < par, 24,
+                                    median.idx)]
+    this.cov[, median.chr := median(reads.corrected.org, na.rm = T),
+             by = median.idx]
+    this.cov[, reads.corrected := ifelse(median.idx %in% c(23, 24),
+                                         reads.corrected.org/median.chr,
+                                         reads.corrected.org)]
+    return(dt2gr(this.cov))
+}
+
+
 
 
 ##############################
@@ -479,7 +544,7 @@ update_cols = function(U, A, B, lambda1){
 #' @return S and L numeric vectors each of length m. Vectors for sample in question
 #' @author Aditya Deshpande
 
-wash_cycle = function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat, lambda1 = NA, lambda2 = NA, verbose = TRUE){
+wash_cycle <- function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat, lambda1 = NA, lambda2 = NA, verbose = TRUE){
 
     if (verbose == TRUE){
         message("Using the detergent provided to start washing")
@@ -560,13 +625,16 @@ wash_cycle = function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat,
 #' @param blacklist, boolean (default == FALSE). Whether to exclude off-target markers in case of Exomes or targeted sequqnecing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not.
 #'
 #' @param burnin.samples.path, character (default = NA). Path to balcklist markers file
+#'
+#' @param build genome build to define PAR region in chromosome X
 #' 
 #' @return vector of length m with processed coverage data
 #' 
 #' @author Aditya Deshpande
 
-prep_cov = function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA){
+prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA, build = build){
 
+    m.vec = balance_X(m.vec, build = build)
     m.vec = gr2dt(m.vec)
     m.vec = m.vec[, .(seqnames, reads.corrected)]
     m.vec[, median.chr := median(.SD$reads.corrected, na.rm = T), by = seqnames]
@@ -614,6 +682,8 @@ prep_cov = function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA){
 #' 
 #' @param verbose boolean (default == TRUE). Outputs progress.
 #'
+#' @param build genome build to define PAR region in chromosome X
+#'
 #' @param chr integer (default == NA). Depricated. Can be used to decompose a single chromosome.
 #' 
 #' @export
@@ -623,7 +693,7 @@ prep_cov = function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA){
 
 
 
-start_wash_cycle = function(cov, mc.cores = 1, detergent.pon.path = NA, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = TRUE, germline.file = NA){
+start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, build = "hg19"){
 
     if(verbose == TRUE){
         message("Loading PON a.k.a detergent from path provided")
@@ -642,8 +712,12 @@ start_wash_cycle = function(cov, mc.cores = 1, detergent.pon.path = NA, verbose 
     if (germline.filter & is.na(germline.file)){
         stop("If germiline.filter is set to TRUE, provide path to germline marker file")
     }
+
+    this.build = build
     
-    m.vec = prep_cov(cov, blacklist = use.blacklist, burnin.samples.path = detergent.pon.path)
+    m.vec = prep_cov(cov, blacklist = use.blacklist,
+                     burnin.samples.path = detergent.pon.path,
+                     build = this.build)
     m.vec = as.matrix(m.vec$reads.corrected)
     L.burnin = rpca.1$L
     S.burnin = rpca.1$S
@@ -656,7 +730,9 @@ start_wash_cycle = function(cov, mc.cores = 1, detergent.pon.path = NA, verbose 
         message("Initializing")
     }
 
-    decomposed = wash_cycle(m.vec = m.vec, L.burnin = L.burnin, S.burnin = S.burnin, r = r, U.hat = U.hat, V.hat = V.hat, sigma.hat = sigma.hat)
+    decomposed = wash_cycle(m.vec = m.vec, L.burnin = L.burnin,
+                            S.burnin = S.burnin, r = r, U.hat = U.hat,
+                            V.hat = V.hat, sigma.hat = sigma.hat)
     
     if (verbose == TRUE){
         message("Combining matrices with gRanges")

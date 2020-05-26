@@ -4,8 +4,19 @@
 \alias{wash_cycle}
 \title{function to perform online rPCA descomposition}
 \usage{
-wash_cycle(m.vec, L.burnin, S.burnin, r, N, U.hat, V.hat, sigma.hat,
-  lambda1 = NA, lambda2 = NA, verbose = TRUE)
+wash_cycle(
+  m.vec,
+  L.burnin,
+  S.burnin,
+  r,
+  N,
+  U.hat,
+  V.hat,
+  sigma.hat,
+  lambda1 = NA,
+  lambda2 = NA,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{m.vec}{numeric vector of length m. Vector of GC corrected coverage data of sample in question}

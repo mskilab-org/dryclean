@@ -4,7 +4,12 @@
 \alias{prep_cov}
 \title{function to prepare covearge data for decomposition}
 \usage{
-prep_cov(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA)
+prep_cov(
+  m.vec = m.vec,
+  blacklist = FALSE,
+  burnin.samples.path = NA,
+  build = build
+)
 }
 \arguments{
 \item{m.vec}{GRanges object. GRanges containing GC corrected reads as a cloumn in metadata}
@@ -12,6 +17,8 @@ prep_cov(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA)
 \item{blacklist, }{boolean (default == FALSE). Whether to exclude off-target markers in case of Exomes or targeted sequqnecing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not.}
 
 \item{burnin.samples.path, }{character (default = NA). Path to balcklist markers file}
+
+\item{build}{genome build to define PAR region in chromosome X}
 }
 \value{
 vector of length m with processed coverage data
