@@ -712,6 +712,10 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     if (germline.filter & is.na(germline.file)){
         stop("If germiline.filter is set to TRUE, provide path to germline marker file")
     }
+    
+    all.chr = c(as.character(1:22), "X")
+
+    cov = cov %Q% (seqnames %in% all.chr)
 
     this.build = build
     
