@@ -215,6 +215,8 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
     samp.final[, file.available := file.exists(normal_cov)]
 
     message("Checking for existence of files")
+
+    message(paste0(nrow(samp.final), " files present"))
     
     samp.final = samp.final[file.available == TRUE]
 
