@@ -19,7 +19,7 @@
 #' @importFrom utils globalVariables
 #' @import gUtils   
 
-globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted", "decomposed_cov", "germline.status", "log.reads", "mclapply", "median.chr", "normal_cov", "foreground", "input.read.counts", "foreground.log", "reads.corrected", "background", "background.log", ".N", ".SD", ":=", "median.idx", ".GRP", "reads.corrected.org"))
+globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted", "decomposed_cov", "germline.status", "log.reads", "mclapply", "median.chr", "normal_cov", "foreground", "input.read.counts", "foreground.log", "reads.corrected", "background", "background.log", ".N", ".SD", ":=", "median.idx", ".GRP", "reads.corrected.org", "%>%", "signal", "signal.org"))
 
 
 
@@ -36,9 +36,9 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' read count data and carries rPCA decomposition on the matrix thus created. The normal samples used to form the PON can be selected randomly or by clustering the genomic bacground or all samples can be used.
 #' 
 #' @export
-#' @param normal.table.path character path to data.table containing two columns "sample" and "normal_cov". See manual for details
+#' @param normal.table.path character path to data.table containing two columns "sample" and "normal_cov". See manual for details.
 #' 
-#' @param use.all boolean (default == TRUE). If all normal samples are to be used for creating PON
+#' @param use.all boolean (default == TRUE). If all normal samples are to be used for creating PON.
 #' 
 #' @param choose.randomly boolean (default == FALSE). If a random subset of normal samples are to be used for creating PON.
 #' 
@@ -50,13 +50,17 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' 
 #' @param save.pon boolean (default == FALSE). If PON needs to be saved.
 #' 
-#' @param path.to.save charater (default == NA). Path to save the PON created if save.pon == TRUE.
+#' @param path.to.save character (default == NA). Path to save the PON created if save.pon == TRUE.
 #' 
-#' @param num.cores interger (default == 1). Number of cores to use for parallelization
+#' @param num.cores interger (default == 1). Number of cores to use for parallelization.
 #'
 #' @param verbose boolean (default == TRUE). Outputs progress.
 #'
-#' @param build genome build to define PAR region in chromosome X
+#' @param is.human boolean (default == TRUE). Organism type.
+#' 
+#' @param build genome build to define PAR region in chromosome X.
+#'
+#' @param field character (default == "reads.corrected"). Field to use for processing.
 #' 
 #' @return \code{prepare_detergent} returns a list containing the following components:
 #' 
@@ -82,7 +86,7 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @author Aditya Deshpande
 
 
-prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, build = "hg19"){
+prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected"){
     
     if (verbose){
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
@@ -128,14 +132,14 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
         mat.small = mclapply(normal.table[, sample], function(nm){
             this.cov = tryCatch(readRDS(normal.table[nm, normal_cov]), error = function(e) NULL)
             if (!is.null(this.cov)){
-                this.cov = gr2dt(this.cov)
-                reads = this.cov[seqnames == "22", .(seqnames, reads.corrected)]
-                reads[, median.chr := median(.SD$reads.corrected, na.rm = T), by = seqnames]
-                reads[is.na(reads.corrected), reads.corrected := median.chr]
-                min.cov = min(reads[reads.corrected > 0]$reads.corrected, na.rm = T)
-                reads[reads.corrected == 0, reads.corrected := min.cov]
-                reads[reads.corrected < 0, reads.corrected := min.cov]
-                reads = log(reads[, .(reads.corrected)])
+                this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal")
+                reads = this.cov[seqnames == "22", .(seqnames, signal)]
+                reads[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
+                reads[is.na(signal), signal := median.chr]
+                min.cov = min(reads[signal > 0]$signal, na.rm = T)
+                reads[signal == 0, signal := min.cov]
+                reads[signal < 0, signal := min.cov]
+                reads = log(reads[, .(signal)])
                 reads = transpose(reads)
                 reads = cbind(reads, nm)
             } else {reads = data.table(NA)}
@@ -195,39 +199,53 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
     }
 
     
-    message("Removing Y and balancing pre-decomposition")
+    message("Balancing pre-decomposition")
 
-    if (build == "hg19"){
-        par = 2700000
-    } else if (build == "hg38"){
-        par = 2782000
-    } else {
-        stop("provide either hg19 or hg38 build")
+    if (is.human){
+        if (build == "hg19"){
+            par = 2700000
+        } else if (build == "hg38"){
+            par = 2782000
+        } else {
+            stop("provide either hg19 or hg38 build")
+        }
     }
+
+
+    samp.final[, file.available := file.exists(normal_cov)]
+
+    message("Checking for existence of files")
     
+    samp.final = samp.final[file.available == TRUE]
+
     mat.n = mclapply(samp.final[, sample], function(nm){
         this.cov = tryCatch(readRDS(samp.final[nm, normal_cov]), error = function(e) NULL)
-        all.chr = c(as.character(1:22), "X")
         if (!is.null(this.cov)){
+            all.chr = c(as.character(1:22), "X")
             this.cov = this.cov %Q% (seqnames %in% all.chr)
-            this.cov = gr2dt(this.cov)
-            setnames(this.cov, "reads.corrected", "reads.corrected.org")
+            this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal")
+            setnames(this.cov, "signal", "signal.org")
             this.cov[, median.idx := .GRP, by = seqnames]
-            this.cov[, median.idx := ifelse(seqnames == "X" & start < par, 24, median.idx)]
-            this.cov[, median.chr := median(reads.corrected.org, na.rm = T), by = median.idx]
-            this.cov[, reads.corrected := reads.corrected.org/median.chr]
+            if (is.human){
+                this.cov[, median.idx := ifelse(seqnames == "X" & start < par, 24, median.idx)]
+            }
+            this.cov[, median.chr := median(signal.org, na.rm = T), by = median.idx]
+            this.cov[, signal := signal.org/median.chr]
             message(nm)
-            reads = this.cov[, .(seqnames, reads.corrected)]
-            reads[, median.chr := median(.SD$reads.corrected, na.rm = T), by = seqnames]            
-            reads[is.na(reads.corrected), reads.corrected := median.chr]
-            min.cov = min(reads[reads.corrected > 0]$reads.corrected, na.rm = T)
-            reads[reads.corrected == 0, reads.corrected := min.cov]
-            reads[reads.corrected < 0, reads.corrected := min.cov]
-            reads[, reads.corrected := log(reads.corrected)]
-            reads = reads[, .(reads.corrected)]
-            reads = transpose(reads)
-        } else {reads = data.table(NA)}
-        return(reads)
+            reads = this.cov[, .(seqnames, signal, median.chr)]
+            ##reads[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
+            reads[is.na(signal), signal := median.chr]
+            min.cov = min(reads[signal > 0]$signal, na.rm = T)
+            reads[is.infinite(signal), signal := min.cov]
+            reads[signal == 0, signal := min.cov]
+            reads[signal < 0, signal := min.cov]
+            reads[, signal := log(signal)]
+            reads = reads[, .(signal)]
+            if (!any(is.infinite(reads$signal))){
+                reads = transpose(reads)
+                return(reads)
+            } 
+        } 
     }, mc.cores = num.cores)
 
     gc()
@@ -464,51 +482,6 @@ update_cols <- function(U, A, B, lambda1){
 
 
 ##############################
-## balance_X
-##############################
-#' @name balance_X
-#'
-#' @title Balances X chr and takes PAR region under considersation
-#'
-#' @keywords internal
-#' 
-#' @param this.cov coverage input
-#'
-#' @param build genome build to define PAR region in chromosome X
-#' 
-#' @return median normalized X chromosome that takes care of single copy
-#' @author Aditya Deshpande
-
-balance_X <- function(this.cov, build = build){
-    
-    all.chr = c(as.character(1:22), "X")
-
-    if (build == "hg19"){
-        par = 2700000
-    } else if (build == "hg38"){
-        par = 2782000
-    } else {
-        stop("provide either hg19 or hg38 build")
-    }
-
-    this.cov = this.cov %Q% (seqnames %in% all.chr)
-    this.cov = gr2dt(this.cov)
-    setnames(this.cov, "reads.corrected", "reads.corrected.org")
-    this.cov[, median.idx := .GRP, by = seqnames]
-    this.cov[, median.idx := ifelse(seqnames == "X" & start < par, 24,
-                                    median.idx)]
-    this.cov[, median.chr := median(reads.corrected.org, na.rm = T),
-             by = median.idx]
-    this.cov[, reads.corrected := ifelse(median.idx %in% c(23, 24),
-                                         reads.corrected.org/median.chr,
-                                         reads.corrected.org)]
-    return(dt2gr(this.cov))
-}
-
-
-
-
-##############################
 ## wash_cycle
 ##############################
 #' @name wash_cycle
@@ -569,10 +542,6 @@ wash_cycle <- function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat
         }
     }
 
-    if (verbose == TRUE){
-        message("Here begins the wash cycle")
-    }
-
     U = U.hat %*% sqrt(diag(sigma.hat))
     A = matrix(0, r, r)
     B = matrix(0, m, r)
@@ -615,8 +584,7 @@ wash_cycle <- function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat
 #' @name prep_cov
 #'
 #' @title function to prepare covearge data for decomposition 
-#' @description preapares the GC corrected coverage data for decomposition
-#'
+#' @description prepares the GC corrected coverage data for decomposition
 #' 
 #' @keywords internal
 #' 
@@ -626,32 +594,28 @@ wash_cycle <- function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat
 #'
 #' @param burnin.samples.path, character (default = NA). Path to balcklist markers file
 #'
-#' @param build genome build to define PAR region in chromosome X
-#' 
 #' @return vector of length m with processed coverage data
 #' 
 #' @author Aditya Deshpande
 
-prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA, build = build){
-
-    m.vec = balance_X(m.vec, build = build)
+prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA){
     m.vec = gr2dt(m.vec)
-    m.vec = m.vec[, .(seqnames, reads.corrected)]
-    m.vec[, median.chr := median(.SD$reads.corrected, na.rm = T), by = seqnames]
-    m.vec[is.na(reads.corrected), reads.corrected := median.chr]
-    m.vec[is.infinite(reads.corrected), reads.corrected := median.chr]
-    min.cov = min(m.vec[reads.corrected > 0]$reads.corrected, na.rm = T)
-    m.vec[reads.corrected == 0, reads.corrected := min.cov]
-    m.vec[reads.corrected < 0, reads.corrected := min.cov]
+    m.vec = m.vec[, .(seqnames, signal)]
+    m.vec[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
+    m.vec[is.na(signal), signal := median.chr]
+    min.cov = min(m.vec[signal > 0]$signal, na.rm = T)
+    m.vec[is.infinite(signal), signal := min.cov]
+    m.vec[signal == 0, signal := min.cov]
+    m.vec[signal < 0, signal := min.cov]
 
     if (blacklist){
         blacklist.pon =  readRDS(paste0(burnin.samples.path, "/blacklist.rds"))
         m.vec$blacklisted = blacklist.pon$blacklisted
-        m.vec[blacklisted == TRUE, reads.corrected := NA]
+        m.vec[blacklisted == TRUE, signal := NA]
         m.vec = na.omit(m.vec)
     }
 
-    m.vec[, reads.corrected := log(reads.corrected)]
+    m.vec[, signal := log(signal)]
 
     return(m.vec)
 }
@@ -681,9 +645,11 @@ prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA,
 #' @param germline.file character (default == NA). Path to file with germline markers.
 #' 
 #' @param verbose boolean (default == TRUE). Outputs progress.
-#'
-#' @param build genome build to define PAR region in chromosome X
-#'
+#' 
+#' @param is.human boolean (default == TRUE). Organism type.
+#' 
+#' @param field character (default == "reads.corrected"). Field to use for processing.
+#' 
 #' @param chr integer (default == NA). Depricated. Can be used to decompose a single chromosome.
 #' 
 #' @export
@@ -693,7 +659,7 @@ prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA,
 
 
 
-start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, build = "hg19"){
+start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE){
 
     if(verbose == TRUE){
         message("Loading PON a.k.a detergent from path provided")
@@ -712,17 +678,18 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     if (germline.filter & is.na(germline.file)){
         stop("If germiline.filter is set to TRUE, provide path to germline marker file")
     }
-    
+
     all.chr = c(as.character(1:22), "X")
-
-    cov = cov %Q% (seqnames %in% all.chr)
-
-    this.build = build
     
+    if (is.human){
+        cov = cov %Q% (seqnames %in% all.chr)
+    }
+    
+    cov = cov[, field] %>% gr2dt() %>% setnames(., field, "signal") %>% dt2gr()
     m.vec = prep_cov(cov, blacklist = use.blacklist,
-                     burnin.samples.path = detergent.pon.path,
-                     build = this.build)
-    m.vec = as.matrix(m.vec$reads.corrected)
+                     burnin.samples.path = detergent.pon.path)
+    
+    m.vec = as.matrix(m.vec$signal)
     L.burnin = rpca.1$L
     S.burnin = rpca.1$S
     r = rpca.1$k
@@ -731,7 +698,7 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     sigma.hat = rpca.1$sigma.hat
 
     if(verbose == TRUE){
-        message("Initializing")
+        message("Initializing wash cycle")
     }
 
     decomposed = wash_cycle(m.vec = m.vec, L.burnin = L.burnin,
@@ -743,18 +710,18 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     }
 
     cov = gr2dt(cov)
-    cov[, median.chr := median(.SD$reads.corrected, na.rm = T), by = seqnames]
+    cov[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
 
     if (use.blacklist){
-        cov[is.na(reads.corrected), reads.corrected := median.chr]
-        cov[is.infinite(reads.corrected), reads.corrected := median.chr]
+        cov[is.na(signal), signal := median.chr]
+        cov[is.infinite(signal), signal := median.chr]
         blacklist.pon =  readRDS(paste0(detergent.pon.path, "/blacklist.rds"))
         cov$blacklisted = blacklist.pon$blacklisted
-        cov[blacklisted == TRUE, reads.corrected := NA]
+        cov[blacklisted == TRUE, signal := NA]
         cov = na.omit(cov)
     }
     
-    setnames(cov, "reads.corrected", "input.read.counts")
+    setnames(cov, "signal", "input.read.counts")
     cov = cbind(decomposed[[2]], cov)
     colnames(cov)[1] = 'foreground.log'
     cov[is.na(input.read.counts), foreground.log := NA]
@@ -782,7 +749,6 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     return(cov)
 }
 
-
-
+message("Giddy up!")
 
     

@@ -16,13 +16,15 @@ prepare_detergent(
   verbose = TRUE,
   num.cores = 1,
   tolerance = 1e-04,
-  build = "hg19"
+  is.human = TRUE,
+  build = "hg19",
+  field = "reads.corrected"
 )
 }
 \arguments{
-\item{normal.table.path}{character path to data.table containing two columns "sample" and "normal_cov". See manual for details}
+\item{normal.table.path}{character path to data.table containing two columns "sample" and "normal_cov". See manual for details.}
 
-\item{use.all}{boolean (default == TRUE). If all normal samples are to be used for creating PON}
+\item{use.all}{boolean (default == TRUE). If all normal samples are to be used for creating PON.}
 
 \item{choose.randomly}{boolean (default == FALSE). If a random subset of normal samples are to be used for creating PON.}
 
@@ -32,15 +34,19 @@ prepare_detergent(
 
 \item{save.pon}{boolean (default == FALSE). If PON needs to be saved.}
 
-\item{path.to.save}{charater (default == NA). Path to save the PON created if save.pon == TRUE.}
+\item{path.to.save}{character (default == NA). Path to save the PON created if save.pon == TRUE.}
 
 \item{verbose}{boolean (default == TRUE). Outputs progress.}
 
-\item{num.cores}{interger (default == 1). Number of cores to use for parallelization}
+\item{num.cores}{interger (default == 1). Number of cores to use for parallelization.}
 
 \item{tolerance}{numeric (default == 0.0001). Tolerance for error for batch rPCA. We suggest keeping this value.}
 
-\item{build}{genome build to define PAR region in chromosome X}
+\item{is.human}{boolean (default == TRUE). Organism type.}
+
+\item{build}{genome build to define PAR region in chromosome X.}
+
+\item{field}{character (default == "reads.corrected"). Field to use for processing.}
 }
 \value{
 \code{prepare_detergent} returns a list containing the following components:

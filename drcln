@@ -24,17 +24,32 @@ if (!exists('opt'))
     {
         option_list = list(
             make_option(c("-i", "--input"), type = "character", help = "Path to cov.rds file, fragCounter output for sample under consideration"),
+            
             make_option(c("-p", "--pon"), type = "character", help = "Path to Panel Of Normal (PON) on which batch rPCA have been run. Within the file should be L, S matrices, estimated rank for burnin samples and svd decomposition matrices for the same"),
+            
             make_option(c("-m", "--name"), default = TRUE, type = "character", help = "Sample / Individual name"),
+            
             make_option(c("-b", "--blacklist"), default = FALSE, type = "logical", help = "blacklisted makers"),
+            
             make_option(c("-w", "--wholeGenome"), default = TRUE, type = "logical", help = "If TRUE then it will process all chromosomes and parallelize it"),
+            
             make_option(c("-C", "--chromosome"), default = NA, type = "character", help = "If wholeGenome is FALSE, specify the chromosome to process"),
+            
             make_option(c("-g", "--germline.filter"), default = FALSE, type = "logical", help = "If PON based germline filter is to be used for removing some common germline events, If set to TRUE, give path to germline annotated file"),
+            
             make_option(c("-f", "--germline.file"), default = NA, type = "character", help = "Path to file annotated with germline calls, if germline.filter == TRUE"),
+            
             make_option(c("-c", "--cores"), type = "integer", default = 10,  help = "How many cores to use"),
+            
+            make_option(c("-F", "--field"), type = "character", default = 'reads.corrected', help = "Field name in GRanges metadata to use for drycleaning"),
+            
+            make_option(c("-B", "--build"), type = "character", default = 'hg19', help = "hg19/hg38 build for human samples"),
+            
+            make_option(c("-h", "--human"), type = "boolean", default = 'TRUE', help = "Specify if the samples under consideration are human"),
+            
             make_option(c("-o", "--outdir"), type = "character", default = './', help = "output directory"),
-            make_option(c("-k", "--collapse"), type = "logical", default = FALSE, help = "collapse 200bp fragCounter to 1kb")#,
-            #make_option(c("-l", "--libdir"), type = "character", help = "Directory containing this R file")
+            
+            make_option(c("-k", "--collapse"), type = "logical", default = FALSE, help = "collapse 200bp fragCounter to 1kb")
             )
 
         parseobj = OptionParser(option_list=option_list)
@@ -43,9 +58,6 @@ if (!exists('opt'))
         if ((is.null(opt$input)) | is.null(opt$pon))
             stop(print_help(parseobj))
 
-        ##print(opt)
-
-        ##print(.libPaths())
         options(error=function()traceback(2))
 
         ## keep record of run
@@ -79,7 +91,8 @@ suppressWarnings(suppressPackageStartupMessages(library(dryclean)))
                                     verbose = TRUE, whole_genome = opt$wholeGenome,
                                     chr = opt$chromosome, use.blacklist = opt$blacklist,
                                     germline.filter = opt$germline.filter,
-                                    germline.file = opt$germline.file)
+                                    germline.file = opt$germline.file,
+                                    field = opt$field)
         
         saveRDS(this.out, paste0(opt$outdir, 'drycleaned.cov.rds'))
         

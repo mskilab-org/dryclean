@@ -14,7 +14,8 @@ start_wash_cycle(
   chr = NA,
   germline.filter = FALSE,
   germline.file = NA,
-  build = "hg19"
+  field = "reads.corrected",
+  is.human = TRUE
 )
 }
 \arguments{
@@ -36,7 +37,9 @@ start_wash_cycle(
 
 \item{germline.file}{character (default == NA). Path to file with germline markers.}
 
-\item{build}{genome build to define PAR region in chromosome X}
+\item{field}{character (default == "reads.corrected"). Field to use for processing.}
+
+\item{is.human}{boolean (default == TRUE). Organism type.}
 }
 \value{
 GRange object with decomposition

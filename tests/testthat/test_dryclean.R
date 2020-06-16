@@ -32,8 +32,10 @@ m.vec.path = system.file("extdata", "m.vec.rds", package = 'dryclean')
 
 
 test_that("prep_cov", {
+    field = "reads.corrected"
     sample.1 = readRDS(sample.1.path)
-    pcov = prep_cov(m.vec = sample.1, build = "hg19")
+    sample.1 = sample.1[, field] %>% gr2dt() %>% setnames(., field, "signal") %>% dt2gr()
+    pcov = prep_cov(m.vec = sample.1)
     expect_identical(class(pcov)[1], "data.table")
     expect_equal(dim(pcov)[1], 50)
 })
