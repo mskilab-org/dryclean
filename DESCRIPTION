@@ -13,6 +13,7 @@ Imports:
     rsvd,
     GenomicRanges,
     stats,
+    magrittr,
     MASS
 Suggests:
     testthat

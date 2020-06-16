@@ -8,6 +8,7 @@
 #' @importFrom data.table setnames
 #' @importFrom data.table transpose
 #' @import rsvd
+#' @importFrom magrittr %>%
 #' @importFrom gUtils gr2dt
 #' @importFrom gUtils dt2gr
 #' @importFrom stats hclust
