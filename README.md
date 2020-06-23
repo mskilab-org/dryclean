@@ -17,6 +17,13 @@ Install devtools from CRAN
 install.packages('devtools')
 ```
 
+Set this to allow dependencies that throw warnings to be installed.
+
+
+```R
+Sys.setenv(R_REMOTES_NO_ERRORS_FROM_WARNINGS = TRUE)
+```
+
 Install dependent packages and latest Bioconductor (if you haven't already)
 
 
