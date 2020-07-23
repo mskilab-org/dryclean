@@ -87,7 +87,7 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @author Aditya Deshpande
 
 
-prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected"){
+prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected", PAR.file = "~/git/dryclean/inst/extdata/PAR_hg19.rds"){
     
     if (verbose){
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
@@ -202,41 +202,47 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
     
     message("Balancing pre-decomposition")
 
-    if (is.human){
-        if (build == "hg19"){
-            par = 2700000
-        } else if (build == "hg38"){
-            par = 2782000
-        } else {
-            stop("provide either hg19 or hg38 build")
-        }
-    }
+    #if (is.human){
+        #if (build == "hg19"){
+            #par = 2700000
+        #} else if (build == "hg38"){
+            #par = 2782000
+        #} else {
+            #stop("provide either hg19 or hg38 build")
+        #}
+    #}
 
+    par.gr = readRDS(PAR.file)
+
+    message("PAR read")
 
     samp.final[, file.available := file.exists(normal_cov)]
 
     message("Checking for existence of files")
 
-    message(paste0(nrow(samp.final), " files present"))
-    
     samp.final = samp.final[file.available == TRUE]
 
+    message(paste0(nrow(samp.final), " files present"))
+    
     mat.n = mclapply(samp.final[, sample], function(nm){
         this.cov = tryCatch(readRDS(samp.final[nm, normal_cov]), error = function(e) NULL)
         if (!is.null(this.cov)){
             all.chr = c(as.character(1:22), "X")
             this.cov = this.cov %Q% (seqnames %in% all.chr)
-            this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal")
-            setnames(this.cov, "signal", "signal.org")
+            this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal.org")
             this.cov[, median.idx := .GRP, by = seqnames]
-            if (is.human){
-                this.cov[, median.idx := ifelse(seqnames == "X" & start < par, 24, median.idx)]
-            }
-            this.cov[, median.chr := median(signal.org, na.rm = T), by = median.idx]
-            this.cov[, signal := signal.org/median.chr]
+            ##if (is.human){
+                ##this.cov[, median.idx := ifelse(seqnames == "X" & start < par, 24, median.idx)]
+            ##}
+            this.cov$mt = gr.match(dt2gr(this.cov), par.gr)
+            this.cov[, median.idx := ifelse(is.na(mt), median.idx, mt+24)]
+            median.all = this.cov[, .(median.chr = median(signal.org, na.rm = T)), by = median.idx]
+            this.cov = merge(this.cov, median.all, by = "median.idx") 
+            this.cov[, signal := ifelse(median.chr == 0, 1, signal.org/median.chr)]
             message(nm)
+            message("this is modified version")
             reads = this.cov[, .(seqnames, signal, median.chr)]
-            ##reads[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
+            reads[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
             reads[is.na(signal), signal := median.chr]
             min.cov = min(reads[signal > 0]$signal, na.rm = T)
             reads[is.infinite(signal), signal := min.cov]
@@ -752,6 +758,6 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     return(cov)
 }
 
-message("Giddy up!")
+message("Giddy up 4!")
 
     

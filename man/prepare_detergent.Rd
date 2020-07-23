@@ -18,7 +18,8 @@ prepare_detergent(
   tolerance = 1e-04,
   is.human = TRUE,
   build = "hg19",
-  field = "reads.corrected"
+  field = "reads.corrected",
+  PAR.file = "~/git/dryclean/inst/extdata/PAR_hg19.rds"
 )
 }
 \arguments{
