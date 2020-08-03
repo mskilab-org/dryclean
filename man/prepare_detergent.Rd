@@ -19,7 +19,7 @@ prepare_detergent(
   is.human = TRUE,
   build = "hg19",
   field = "reads.corrected",
-  PAR.file = "~/git/dryclean/inst/extdata/PAR_hg19.rds"
+  PAR.file = NULL
 )
 }
 \arguments{
@@ -48,6 +48,8 @@ prepare_detergent(
 \item{build}{genome build to define PAR region in chromosome X.}
 
 \item{field}{character (default == "reads.corrected"). Field to use for processing.}
+
+\item{PAR.file}{this is a GRanges with the boundaries of PAR region in X chr.}
 }
 \value{
 \code{prepare_detergent} returns a list containing the following components:

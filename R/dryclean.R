@@ -62,6 +62,8 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @param build genome build to define PAR region in chromosome X.
 #'
 #' @param field character (default == "reads.corrected"). Field to use for processing.
+#'
+#' @param PAR.file this is a GRanges with the boundaries of PAR region in X chr.
 #' 
 #' @return \code{prepare_detergent} returns a list containing the following components:
 #' 
@@ -87,7 +89,7 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @author Aditya Deshpande
 
 
-prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected", PAR.file = "~/git/dryclean/inst/extdata/PAR_hg19.rds"){
+prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected", PAR.file = NULL){
     
     if (verbose){
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
@@ -134,7 +136,8 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
             this.cov = tryCatch(readRDS(normal.table[nm, normal_cov]), error = function(e) NULL)
             if (!is.null(this.cov)){
                 this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal")
-                reads = this.cov[seqnames == "22", .(seqnames, signal)]
+                ## reads = this.cov[seqnames == "22", .(seqnames, signal)]
+                reads = this.cov[seqnames == seqnames[1], .(seqnames, signal)]
                 reads[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
                 reads[is.na(signal), signal := median.chr]
                 min.cov = min(reads[signal > 0]$signal, na.rm = T)
@@ -212,7 +215,12 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
         #}
     #}
 
-    par.gr = readRDS(PAR.file)
+    if (is.null(PAR.file)){
+        message("PAR file not provided, using hg19 default.
+If this is not the correct build, please provide a GRange object delineating for corresponding build")
+        par.path = system.file("extdata", "PAR_hg19.rds", package = 'dryclean')
+        par.gr = readRDS(par.path)
+    } else {par.gr = readRDS(PAR.file)}
 
     message("PAR read")
 
@@ -228,6 +236,7 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
         this.cov = tryCatch(readRDS(samp.final[nm, normal_cov]), error = function(e) NULL)
         if (!is.null(this.cov)){
             all.chr = c(as.character(1:22), "X")
+            ##all.chr = names(which(seqlengths(this.cov) > 5e6))
             this.cov = this.cov %Q% (seqnames %in% all.chr)
             this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal.org")
             this.cov[, median.idx := .GRP, by = seqnames]
