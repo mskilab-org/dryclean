@@ -18,9 +18,11 @@
 #' @importFrom stats na.omit
 #' @importFrom MASS ginv
 #' @importFrom utils globalVariables
-#' @import gUtils   
+#' @import gUtils
+#' @import pbmcapply
 
-globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted", "decomposed_cov", "germline.status", "log.reads", "mclapply", "median.chr", "normal_cov", "foreground", "input.read.counts", "foreground.log", "reads.corrected", "background", "background.log", ".N", ".SD", ":=", "median.idx", ".GRP", "reads.corrected.org", "%>%", "signal", "signal.org"))
+
+globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted", "decomposed_cov", "germline.status", "log.reads", "mclapply", "median.chr", "normal_cov", "foreground", "input.read.counts", "foreground.log", "reads.corrected", "background", "file.available", "mt", "background.log", ".N", ".SD", ":=", "median.idx", ".GRP", "reads.corrected.org", "%>%", "signal", "signal.org"))
 
 
 
@@ -232,7 +234,7 @@ If this is not the correct build, please provide a GRange object delineating for
 
     message(paste0(nrow(samp.final), " files present"))
     
-    mat.n = mclapply(samp.final[, sample], function(nm){
+    mat.n = pbmclapply(samp.final[, sample], function(nm){
         this.cov = tryCatch(readRDS(samp.final[nm, normal_cov]), error = function(e) NULL)
         if (!is.null(this.cov)){
             all.chr = c(as.character(1:22), "X")
@@ -245,13 +247,14 @@ If this is not the correct build, please provide a GRange object delineating for
             ##}
             this.cov$mt = gr.match(dt2gr(this.cov), par.gr)
             this.cov[, median.idx := ifelse(is.na(mt), median.idx, mt+24)]
-            median.all = this.cov[, .(median.chr = median(signal.org, na.rm = T)), by = median.idx]
-            this.cov = merge(this.cov, median.all, by = "median.idx") 
+            ## median.all = this.cov[, .(median.chr = median(signal.org, na.rm = Tp)), by = median.idx]
+            ## this.cov = merge(this.cov, median.all, by = "median.idx")
+            this.cov[, median.chr := median(signal.org, na.rm = T), by = median.idx]
             this.cov[, signal := ifelse(median.chr == 0, 1, signal.org/median.chr)]
-            message(nm)
-            message("this is modified version")
+            ## message(nm)
+            ## message("this is modified version")
             reads = this.cov[, .(seqnames, signal, median.chr)]
-            reads[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
+            #reads[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
             reads[is.na(signal), signal := median.chr]
             min.cov = min(reads[signal > 0]$signal, na.rm = T)
             reads[is.infinite(signal), signal := min.cov]

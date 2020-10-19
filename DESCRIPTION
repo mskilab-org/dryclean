@@ -14,6 +14,7 @@ Imports:
     GenomicRanges,
     stats,
     magrittr,
+    pbmcapply,
     MASS
 Suggests:
     testthat
@@ -21,4 +22,4 @@ License: GPL-3
 BugReports: http://github.com/mskilab/dryclean/issues
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
