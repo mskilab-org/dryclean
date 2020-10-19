@@ -3,9 +3,9 @@ dist: trusty
 cache: packages
 sudo: false
 
-r: 3.5.1
-
-r_check_args: "--no-build-vignettes --no-manual --as-cran --no-tests --no-examples"
+r: 3.6.1
+warnings_are_errors: false
+r_check_args: "--no-build-vignettes --no-manual --as-cran --no-examples"
 
 r_packages:
   - covr
