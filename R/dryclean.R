@@ -701,8 +701,14 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     }
 
     all.chr = c(as.character(1:22), "X")
+
+    is.chr = FALSE
     
     if (is.human){
+        if(any(grepl("chr", as.character(seqnames(cov))))){
+            cov = gr.sub(cov)
+            is.chr = TRUE
+        }
         cov = cov %Q% (seqnames %in% all.chr)
     }
     
@@ -767,6 +773,10 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     }
 
     cov = dt2gr(cov)
+
+    if (is.chr){
+        cov = gr.chr(cov)
+    }
     return(cov)
 }
 
