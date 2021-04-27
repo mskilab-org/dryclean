@@ -137,7 +137,7 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
         mat.small = mclapply(normal.table[, sample], function(nm){
             this.cov = tryCatch(readRDS(normal.table[nm, normal_cov]), error = function(e) NULL)
             if (!is.null(this.cov)){
-                this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal")
+                this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal") %>% gr.nochr
                 ## reads = this.cov[seqnames == "22", .(seqnames, signal)]
                 reads = this.cov[seqnames == seqnames[1], .(seqnames, signal)]
                 reads[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
@@ -237,6 +237,7 @@ If this is not the correct build, please provide a GRange object delineating for
     mat.n = pbmclapply(samp.final[, sample], function(nm){
         this.cov = tryCatch(readRDS(samp.final[nm, normal_cov]), error = function(e) NULL)
         if (!is.null(this.cov)){
+            this.cov = gr.nochr(this.cov) # make sure there is not chr prefix
             all.chr = c(as.character(1:22), "X")
             ##all.chr = names(which(seqlengths(this.cov) > 5e6))
             this.cov = this.cov %Q% (seqnames %in% all.chr)
