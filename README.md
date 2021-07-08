@@ -55,7 +55,7 @@ $ drcln -h ## to see the help message
 
 ## <font color=black> Tutorial </font>
 
-dryclean is a robust principal component analysis (rPCA) based method. dryclean uses a panel of normal (PON) samples to learn the landscape of both biological and technical noise in read depth data. dryclean then uses this landscape significantly reduce noise and artifacts in the signal for tumor samples. The input to the algorithm is GC amd mappability corrected read depth data from fragCounter that can be found at: https://github.com/mskilab/fragCounter .
+dryclean is a robust principal component analysis (rPCA) based method. dryclean uses a panel of normal (PON) samples to learn the landscape of both biological and technical noise in read depth data. dryclean then uses this landscape significantly reduce noise and artifacts in the signal for tumor samples. The input to the algorithm is a [GenomicsRanges](https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html) object containing read depth. You can either use read count from your favorite tools (there are many fast tools out there, for example: [megadepth](https://bioconductor.org/packages/release/bioc/html/megadepth.html)). Using uncorrected read count as input for dryclean works well from our experience, but if you wish, you can use the GC amd mappability corrected read depth data from fragCounter that can be found at: https://github.com/mskilab/fragCounter .
 
 
 ###  <font color=black> 1. Creating Panel of Normal aka detergent </font>
