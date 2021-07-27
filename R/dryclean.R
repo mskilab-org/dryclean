@@ -91,7 +91,7 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @author Aditya Deshpande
 
 
-prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected", PAR.file = NULL){
+prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected", PAR.file = NULL, all.chr = c(as.character(1:22), "X")){
     
     if (verbose){
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
@@ -238,7 +238,7 @@ If this is not the correct build, please provide a GRange object delineating for
         this.cov = tryCatch(readRDS(samp.final[nm, normal_cov]), error = function(e) NULL)
         if (!is.null(this.cov)){
             this.cov = gr.nochr(this.cov) # make sure there is not chr prefix
-            all.chr = c(as.character(1:22), "X")
+            ##all.chr = c(as.character(1:22), "X")
             ##all.chr = names(which(seqlengths(this.cov) > 5e6))
             this.cov = this.cov %Q% (seqnames %in% all.chr)
             this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal.org")
