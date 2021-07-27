@@ -240,7 +240,8 @@ If this is not the correct build, please provide a GRange object delineating for
             this.cov = gr.nochr(this.cov) # make sure there is not chr prefix
             ##all.chr = c(as.character(1:22), "X")
             ##all.chr = names(which(seqlengths(this.cov) > 5e6))
-            this.cov = this.cov %Q% (seqnames %in% all.chr)
+            local.all.chr = all.chr
+            this.cov = this.cov %Q% (seqnames %in% local.all.chr)
             this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal.org")
             this.cov[, median.idx := .GRP, by = seqnames]
             ##if (is.human){
