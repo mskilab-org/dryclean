@@ -252,7 +252,7 @@ If this is not the correct build, please provide a GRange object delineating for
             ## median.all = this.cov[, .(median.chr = median(signal.org, na.rm = Tp)), by = median.idx]
             ## this.cov = merge(this.cov, median.all, by = "median.idx")
             this.cov[, median.chr := median(signal.org, na.rm = T), by = median.idx]
-            this.cov[, signal := ifelse(median.chr == 0, 1, signal.org/median.chr)]
+            this.cov[, signal := ifelse(median.chr == 0 | is.na (signal.org), 1, signal.org/median.chr)]
             ## message(nm)
             ## message("this is modified version")
             reads = this.cov[, .(seqnames, signal, median.chr)]
@@ -339,7 +339,7 @@ If this is not the correct build, please provide a GRange object delineating for
 #' 
 #' @author Aditya Deshpande
 
-identify_germline <- function(normal.table.path = NA, signal.thresh = 0.5, pct.thresh = 0.98, verbose = TRUE, save.grm = FALSE, path.to.save = NA, num.cores = 1){
+identify_germline <- function(normal.table.path = NA, signal.thresh = 0.5, pct.thresh = 0.98, verbose = TRUE, save.grm = FALSE, path.to.save = NA, num.cores = 1, all.chr=c(as.character(1:22), "X")){
 
     if (verbose){
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
@@ -389,6 +389,8 @@ identify_germline <- function(normal.table.path = NA, signal.thresh = 0.5, pct.t
     }
     
     template = readRDS(normal.table[1, normal_cov])
+    local.all.chr = all.chr
+    template = template %Q% (seqnames %in% local.all.chr)
     values(template) <- NULL
     template$germline.status <- mat.bind.t$germline.status
 
@@ -682,7 +684,7 @@ prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA)
 
 
 
-start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE){
+start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE, all.chr = c(as.character(1:22), "X")){
 
     if(verbose == TRUE){
         message("Loading PON a.k.a detergent from path provided")
@@ -702,7 +704,7 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
         stop("If germiline.filter is set to TRUE, provide path to germline marker file")
     }
 
-    all.chr = c(as.character(1:22), "X")
+    #all.chr = c(as.character(1:22), "X")
 
     is.chr = FALSE
     
@@ -711,9 +713,10 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
             cov = gr.sub(cov)
             is.chr = TRUE
         }
-        cov = cov %Q% (seqnames %in% all.chr)
+        #cov = cov %Q% (seqnames %in% all.chr)
     }
-    
+    local.all.chr = all.chr
+    cov = cov %Q% (seqnames %in% local.all.chr)
     cov = cov[, field] %>% gr2dt() %>% setnames(., field, "signal") %>% dt2gr()
     m.vec = prep_cov(cov, blacklist = use.blacklist,
                      burnin.samples.path = detergent.pon.path)
