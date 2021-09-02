@@ -11,11 +11,6 @@ Depends: R (>= 3.3.0),
 Imports: 
     gUtils,
     Matrix,
-<<<<<<< HEAD
-    
-=======
-    rsvd (== 1.0.0),
->>>>>>> 9979871da2f17c49ef3c47f7f143c73802d0f0bf
     GenomicRanges,
     stats,
     magrittr,
