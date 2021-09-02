@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/mskilab/dryclean.svg?branch=master)](https://travis-ci.org/mskilab/dryclean)
+[![Build Status](https://app.travis-ci.com/mskilab/dryclean.svg?branch=master)](https://app.travis-ci.com/mskilab/dryclean)
 [![codecov.io](https://img.shields.io/codecov/c/github/mskilab/dryclean.svg)](https://codecov.io/github/mskilab/dryclean?branch=master)
 
 # <font color=black> dryclean </font>
@@ -55,14 +55,14 @@ $ drcln -h ## to see the help message
 
 ## <font color=black> Tutorial </font>
 
-dryclean is a robust principal component analysis (rPCA) based method. dryclean uses a panel of normal (PON) samples to learn the landscape of both biological and technical noise in read depth data. dryclean then uses this landscape significantly reduce noise and artifacts in the signal for tumor samples. The input to the algorithm is a [GenomicsRanges](https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html) object containing read depth. You can either use read count from your favorite tools (there are many fast tools out there, for example: [megadepth](https://bioconductor.org/packages/release/bioc/html/megadepth.html)). Using uncorrected read count as input for dryclean works well from our experience, but if you wish, you can use the GC amd mappability corrected read depth data from fragCounter that can be found at: https://github.com/mskilab/fragCounter .
+dryclean is a robust principal component analysis (rPCA) based method. dryclean uses a panel of normal (PON) samples to learn the landscape of both biological and technical noise in read depth data. dryclean then uses this landscape significantly reduce noise and artifacts in the signal for tumor samples. The input to the algorithm is a [GenomicsRanges](https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html) object containing read depth. You can either use read count from your favorite tools (there are many fast tools out there, for example: [megadepth](https://bioconductor.org/packages/release/bioc/html/megadepth.html)). Using uncorrected read count as input for dryclean works well from our experience, but if you wish, you can use the GC amd mappability corrected read depth data from fragCounter that can be found at: https://github.com/mskilab/fragCounter . The only requirement for the input is centering the data. This can be achieved by dividing each bin by global mean signal of the sample .i.e. mean-normalization. This is an essential pre-processing step.
 
 
 ###  <font color=black> 1. Creating Panel of Normal aka detergent </font>
 
 For creating PON the following factors are needed:
 
-1. Tumor and normal sample fragCounter outputs should be stored in two different directories
+1. Tumor and normal sample mean-normalized read count outputs should be stored in two different directories
 2. A data.table with two columns:
    a. "sample" column contains the sample name you will use to index the sample
    b. "normal_cov" is a column with paths to the normal samples to be used
@@ -88,7 +88,7 @@ normal_table_example
 
 There are three ways to make the PON:
 
-1. Using all normal samples availabble. PON can be made with all available normal sample. In this case set use.all = TRUE 
+1. Using all normal samples availabble. PON can be made with all available normal samples. In this case set use.all = TRUE 
 
 
 ```R
@@ -102,7 +102,7 @@ detergent = prepare_detergent(normal.table.path = "~/git/dryclean/inst/extdata/n
 detergent = prepare_detergent(normal.table.path = "~/git/dryclean/inst/extdata/normal_table.rds", path.to.save = "~/git/dryclean/inst/extdata/", num.cores = 1, use.all = FALSE, choose.randomly = TRUE)
 ```
 
-3. Cluster based approach. In order to keep the size of PON as small as possible but maximize the information in the PON. This is acheived by clustering the genomic background of normal samples and selecting normal samples from each cluster. Hierarchical clustering is used on L matrix after decomposing a small genomic region of all normal samples.
+3. Cluster based approach. In order to keep the size of PON as small as possible but maximize the information in the PON. This is acheived by clustering the genomic background of normal samples and selecting normal samples from each cluster. Hierarchical clustering is used on L matrix after decomposing a small genomic region of all normal samples. 
 
 
 ```R
@@ -280,12 +280,12 @@ The output has following metadata fields:
 3. reads: Raw read counts
 4. gc: GC score
 5. map: mappability score
-6. input.read.counts: This is the fragCounter input in linear space
+6. input.read.counts: This is the mean-normalized count input in linear space
 7. median.chr: median chromosome signal
 8. blacklisted: if off target marker list is available and used
 9. foreground: Foreground signal, that forms SCNAs (S vector) in read count/ratio space
 10. background: This is the L low ranked vector after decomposition and represent the background noise separated by dryclean in read count/ratio space 
-11. log.reads: log of the fragCounter signal
+11. log.reads: log of the mean-normalized count
 12. germline.blk: germline marker based on the inferred germline function
 
 
@@ -343,7 +343,7 @@ Usage: ./drcln [options]
 
 Options:
 	-i INPUT, --input=INPUT
-		Path to cov.rds file, fragCounter output for sample under consideration
+		Path to cov.rds file, mean-normalized count for sample under consideration
 
 	-p PON, --pon=PON
 		Path to Panel Of Normal (PON) on which batch rPCA have been run. Within the file should be L, S matrices, estimated rank for burnin samples and svd decomposition matrices for the same
@@ -373,7 +373,7 @@ Options:
 		output directory
 
 	-k COLLAPSE, --collapse=COLLAPSE
-		collapse 200bp fragCounter to 1kb
+		collapse 200bp fragCounter to 1kb, deprecatec
 
 	-h, --help
 		Show this help message and exit
