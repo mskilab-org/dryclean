@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/mskilab/dryclean.svg?branch=master)](https://travis-ci.com/mskilab/dryclean)
+[![Build Status](https://app.travis-ci.com/mskilab/dryclean.svg?branch=master)](https://app.travis-ci.com/mskilab/dryclean)
 [![codecov.io](https://img.shields.io/codecov/c/github/mskilab/dryclean.svg)](https://codecov.io/github/mskilab/dryclean?branch=master)
 
 # <font color=black> dryclean </font>
