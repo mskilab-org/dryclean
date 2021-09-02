@@ -21,6 +21,9 @@ before_install:
     - curl -OL https://raw.githubusercontent.com/craigcitro/r-travis/master/scripts/travis-tool.sh
     ##http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
     - chmod 755 ./travis-tool.sh
+    - wget https://github.com/erichson/rSVD/archive/refs/tags/v1.0.0.tar.gz 
+    - R CMD INSTALL v1.0.0.tar.gz
+    - rm v1.0.0.tar.gz
 
 script:
 - travis_wait 30 ./travis-tool.sh run_tests
