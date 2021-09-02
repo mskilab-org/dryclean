@@ -10,7 +10,7 @@ Depends: R (>= 3.3.0),
 Imports: 
     gUtils,
     Matrix,
-    rsvd,
+    rsvd (>= 1.0.0),
     GenomicRanges,
     stats,
     magrittr,

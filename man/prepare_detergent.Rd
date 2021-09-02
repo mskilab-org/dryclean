@@ -19,7 +19,8 @@ prepare_detergent(
   is.human = TRUE,
   build = "hg19",
   field = "reads.corrected",
-  PAR.file = NULL
+  PAR.file = NULL,
+  balance = FALSE
 )
 }
 \arguments{
@@ -50,6 +51,8 @@ prepare_detergent(
 \item{field}{character (default == "reads.corrected"). Field to use for processing.}
 
 \item{PAR.file}{this is a GRanges with the boundaries of PAR region in X chr.}
+
+\item{balance}{Boolean (default == FALSE) experimental variable to take into consideration 1 copy of X chr in male sample}
 }
 \value{
 \code{prepare_detergent} returns a list containing the following components:

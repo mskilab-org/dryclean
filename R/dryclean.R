@@ -66,6 +66,8 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @param field character (default == "reads.corrected"). Field to use for processing.
 #'
 #' @param PAR.file this is a GRanges with the boundaries of PAR region in X chr.
+#'
+#' @param balance Boolean (default == FALSE) experimental variable to take into consideration 1 copy of X chr in male sample
 #' 
 #' @return \code{prepare_detergent} returns a list containing the following components:
 #' 
@@ -137,7 +139,8 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
         mat.small = mclapply(normal.table[, sample], function(nm){
             this.cov = tryCatch(readRDS(normal.table[nm, normal_cov]), error = function(e) NULL)
             if (!is.null(this.cov)){
-                this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal") %>% gr.nochr
+                this.cov = gr.nochr(this.cov)
+                this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal") 
                 ## reads = this.cov[seqnames == "22", .(seqnames, signal)]
                 reads = this.cov[seqnames == seqnames[1], .(seqnames, signal)]
                 reads[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
@@ -687,7 +690,7 @@ prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA)
 
 
 
-start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE, template = NULL){
+start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE){
 
     if(verbose == TRUE){
         message("Loading PON a.k.a detergent from path provided")
