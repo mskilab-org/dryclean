@@ -91,7 +91,7 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @author Aditya Deshpande
 
 
-prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected", PAR.file = NULL){
+prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected", PAR.file = NULL, balance = FALSE){
     
     if (verbose){
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
@@ -240,6 +240,8 @@ If this is not the correct build, please provide a GRange object delineating for
             all.chr = c(as.character(1:22), "X")
             ##all.chr = names(which(seqlengths(this.cov) > 5e6))
             this.cov = this.cov %Q% (seqnames %in% all.chr)
+            this.cov = sortSeqlevels(this.cov)
+            this.cov = sort(this.cov)
             this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal.org")
             this.cov[, median.idx := .GRP, by = seqnames]
             ##if (is.human){
@@ -250,7 +252,11 @@ If this is not the correct build, please provide a GRange object delineating for
             ## median.all = this.cov[, .(median.chr = median(signal.org, na.rm = Tp)), by = median.idx]
             ## this.cov = merge(this.cov, median.all, by = "median.idx")
             this.cov[, median.chr := median(signal.org, na.rm = T), by = median.idx]
-            this.cov[, signal := ifelse(median.chr == 0, 1, signal.org/median.chr)]
+            if (balance){
+                this.cov[, signal := ifelse(median.chr == 0, 1, signal.org/median.chr)]
+            } else{
+                this.cov[, signal := ifelse(median.chr == 0, 1, signal.org)]
+            }
             ## message(nm)
             ## message("this is modified version")
             reads = this.cov[, .(seqnames, signal, median.chr)]
@@ -680,7 +686,7 @@ prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA)
 
 
 
-start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE){
+start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE, template = NULL){
 
     if(verbose == TRUE){
         message("Loading PON a.k.a detergent from path provided")
@@ -713,6 +719,9 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     }
     
     cov = cov[, field] %>% gr2dt() %>% setnames(., field, "signal") %>% dt2gr()
+    cov = sortSeqlevels(cov)
+    cov = sort(cov)
+    
     m.vec = prep_cov(cov, blacklist = use.blacklist,
                      burnin.samples.path = detergent.pon.path)
     
