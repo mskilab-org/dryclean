@@ -6,6 +6,7 @@
 ![dryclean](inst/extdata/DNAhanger.png)
 
 
+
 ### <font color=black> Robust PCA based method to de-noise genomic coverage data.</font>
 
 ## <font color=black> Installations </font>
