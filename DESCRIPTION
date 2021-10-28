@@ -11,12 +11,6 @@ Imports:
     gUtils,
     Matrix,
     rsvd, 
-=======
-    data.table (>= 1.10)
-Imports: 
-    gUtils,
-    Matrix,
-    rsvd,
     GenomicRanges,
     stats,
     magrittr,
