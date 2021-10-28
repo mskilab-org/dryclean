@@ -151,7 +151,7 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
                 reads = log(reads[, .(signal)])
                 reads = transpose(reads)
                 reads = cbind(reads, nm)
-            } else {reads = data.table(NA)}
+            } ## else {reads = data.table(NA)}
             return(reads)}, mc.cores = num.cores)
         
         gc()
@@ -238,7 +238,7 @@ If this is not the correct build, please provide a GRange object delineating for
     message(paste0(nrow(samp.final), " files present"))
     
     mat.n = pbmclapply(samp.final[, sample], function(nm){
-        this.cov = tryCatch(readRDS(samp.final[nm, normal_cov]), error = function(e) NULL)
+        this.cov = tryCatch(readRDS(samp.final[sample == nm, normal_cov]), error = function(e) NULL)
         if (!is.null(this.cov)){
             this.cov = gr.nochr(this.cov) # make sure there is not chr prefix
             all.chr = c(as.character(1:22), "X")
@@ -251,7 +251,7 @@ If this is not the correct build, please provide a GRange object delineating for
             ##if (is.human){
                 ##this.cov[, median.idx := ifelse(seqnames == "X" & start < par, 24, median.idx)]
             ##}
-            this.cov$mt = gr.match(dt2gr(this.cov), par.gr)
+            this.cov$mt = suppressWarnings(gr.match(dt2gr(this.cov), par.gr))
             this.cov[, median.idx := ifelse(is.na(mt), median.idx, mt+24)]
             ## median.all = this.cov[, .(median.chr = median(signal.org, na.rm = Tp)), by = median.idx]
             ## this.cov = merge(this.cov, median.all, by = "median.idx")
@@ -280,7 +280,6 @@ If this is not the correct build, please provide a GRange object delineating for
     }, mc.cores = num.cores)
 
     gc()
-
     mat.bind = rbindlist(mat.n, fill = T)
     mat.bind = na.omit(mat.bind)
     mat.bind.t = transpose(mat.bind)

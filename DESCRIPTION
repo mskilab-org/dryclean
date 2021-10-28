@@ -7,10 +7,10 @@ Description: This is rPCA based methd to denoise genomic coverage data.
 biocViews:
 Depends: R (>= 3.3.0),
     data.table (>= 1.10),
-    rsvd (== 1.0.0)
 Imports: 
     gUtils,
     Matrix,
+    rsvd, 
     GenomicRanges,
     stats,
     magrittr,
