@@ -67,7 +67,7 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #'
 #' @param PAR.file this is a GRanges with the boundaries of PAR region in X chr.
 #'
-#' @param balance Boolean (default == FALSE) experimental variable to take into consideration 1 copy of X chr in male sample
+#' @param balance Boolean (default == TRUE) experimental variable to take into consideration 1 copy of X chr in male sample
 #' 
 #' @return \code{prepare_detergent} returns a list containing the following components:
 #' 
@@ -93,7 +93,7 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @author Aditya Deshpande
 
 
-prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected", PAR.file = NULL, balance = FALSE){
+prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected", PAR.file = NULL, balance = TRUE, infer.germline = TRUE, signal.thresh = 0.3, pct.thresh = 0.80, wgs = TRUE, target_resolution = 1000){
     
     if (verbose){
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
@@ -120,6 +120,10 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
         stop("only one of use.all, choose.randomly, choose.by.clustering can be set to TRUE. Rectify and restart")
     }
 
+    all.chr = c(as.character(1:22), "X")
+
+    template = generate_template(cov = readRDS(normal.table[1]$normal_cov), wgs = wgs, target_resolution = target_resolution, this.field = field)
+    
     if (choose.randomly){
         if (verbose){ 
             message(paste0("Selecting ", number.of.samples, " normal samples randomly"))
@@ -139,7 +143,7 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
         mat.small = mclapply(normal.table[, sample], function(nm){
             this.cov = tryCatch(readRDS(normal.table[nm, normal_cov]), error = function(e) NULL)
             if (!is.null(this.cov)){
-                this.cov = gr.nochr(this.cov)
+                ## this.cov = standardize_coverage(gr.nochr(this.cov), template = template, wgs = wgs, target_resolution = target_resolution, this.field = field)
                 this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal") 
                 ## reads = this.cov[seqnames == "22", .(seqnames, signal)]
                 reads = this.cov[seqnames == seqnames[1], .(seqnames, signal)]
@@ -207,18 +211,6 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
         setkey(samp.final, "sample")
     }
 
-    
-    message("Balancing pre-decomposition")
-
-    #if (is.human){
-        #if (build == "hg19"){
-            #par = 2700000
-        #} else if (build == "hg38"){
-            #par = 2782000
-        #} else {
-            #stop("provide either hg19 or hg38 build")
-        #}
-    #}
 
     if (is.null(PAR.file)){
         message("PAR file not provided, using hg19 default.
@@ -240,31 +232,24 @@ If this is not the correct build, please provide a GRange object delineating for
     mat.n = pbmclapply(samp.final[, sample], function(nm){
         this.cov = tryCatch(readRDS(samp.final[sample == nm, normal_cov]), error = function(e) NULL)
         if (!is.null(this.cov)){
-            this.cov = gr.nochr(this.cov) # make sure there is not chr prefix
+            ## this.cov = standardize_coverage(cov = gr.nochr(this.cov), template = template, wgs = wgs, target_resolution = target_resolution, this.field = field)
             all.chr = c(as.character(1:22), "X")
-            ##all.chr = names(which(seqlengths(this.cov) > 5e6))
             this.cov = this.cov %Q% (seqnames %in% all.chr)
             this.cov = sortSeqlevels(this.cov)
             this.cov = sort(this.cov)
             this.cov = this.cov[, field] %>% gr2dt() %>% setnames(., field, "signal.org")
-            this.cov[, median.idx := .GRP, by = seqnames]
-            ##if (is.human){
-                ##this.cov[, median.idx := ifelse(seqnames == "X" & start < par, 24, median.idx)]
-            ##}
-            this.cov$mt = suppressWarnings(gr.match(dt2gr(this.cov), par.gr))
-            this.cov[, median.idx := ifelse(is.na(mt), median.idx, mt+24)]
-            ## median.all = this.cov[, .(median.chr = median(signal.org, na.rm = Tp)), by = median.idx]
-            ## this.cov = merge(this.cov, median.all, by = "median.idx")
-            this.cov[, median.chr := median(signal.org, na.rm = T), by = median.idx]
             if (balance){
-                this.cov[, signal := ifelse(median.chr == 0, 1, signal.org/median.chr)]
-            } else{
-                this.cov[, signal := ifelse(median.chr == 0, 1, signal.org)]
+                this.cov[, median.idx := .GRP, by = seqnames]
+                this.cov$mt = suppressWarnings(gr.match(dt2gr(this.cov), par.gr))
+                this.cov[, median.idx := ifelse(is.na(mt), median.idx, mt+24)]
+                this.cov[, median.chr := median(signal.org, na.rm = T), by = median.idx]
+                this.cov[, signal := ifelse(seqnames != "X", signal.org,
+                                     ifelse(median.chr == 0, 1, signal.org/median.chr))]
+            } else {
+                this.cov[, signal := signal.org]
+                this.cov[, median.chr := median(signal.org, na.rm = T)]
             }
-            ## message(nm)
-            ## message("this is modified version")
             reads = this.cov[, .(seqnames, signal, median.chr)]
-            #reads[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
             reads[is.na(signal), signal := median.chr]
             min.cov = min(reads[signal > 0]$signal, na.rm = T)
             reads[is.infinite(signal), signal := min.cov]
@@ -278,10 +263,9 @@ If this is not the correct build, please provide a GRange object delineating for
             } 
         } 
     }, mc.cores = num.cores)
-
     gc()
     mat.bind = rbindlist(mat.n, fill = T)
-    mat.bind = na.omit(mat.bind)
+
     mat.bind.t = transpose(mat.bind)
 
     rm(mat.bind)
@@ -303,6 +287,25 @@ If this is not the correct build, please provide a GRange object delineating for
     detergent$U.hat = rsvd.L.burnin$u
     detergent$V.hat = t(rsvd.L.burnin$v)
     detergent$sigma.hat = rsvd.L.burnin$d
+    ##browser()
+    ##this.template = readRDS(samp.final[1]$normal_cov)
+    ##this.template = sortSeqlevels(this.template)
+    ##this.template = sort(this.template)
+    ##        
+    detergent$template = template
+    
+    if (infer.germline){
+        this.s = as.data.table(detergent$S)
+        gc()
+        for(col in names(this.s)) set(this.s, i = which(abs(this.s[[col]]) > signal.thresh), j = col, value = NA)
+        for(col in names(this.s)) set(this.s, i = which(!is.na(this.s[[col]])), j = col, value = 1)
+        for(col in names(this.s)) set(this.s, i = which(is.na(this.s[[col]])), j = col, value = 0)
+        gc()
+        this.germ = this.s[, .(black_list_pct = rowSums(.SD)/dim(this.s)[2])]
+        this.germ[, germline.status := ifelse(black_list_pct > pct.thresh, FALSE, TRUE)]
+        this.germ = dt2gr(cbind(gr2dt(detergent$template), this.germ))
+        detergent$inf_germ = this.germ
+    }
 
     if (verbose){ 
         message("Finished making the PON or detergent and saving it to the path provided")
@@ -316,104 +319,104 @@ If this is not the correct build, please provide a GRange object delineating for
 }
 
 
-##############################
-## identify_germline
-##############################
-#' @name identify_germline
-#'
-#' @title This is first phase in preparing the Panel of Normals (PON)
-#' that will be used for online decomposition
-#' 
-#' @description This function takes in gRanges outputs from fragCounter and extracts GC corrected
-#' read count data and carries rPCA decomposition on the matrix thus created
-#' 
-#' @export
-#' @param normal.table.path character path to data.table containing two columns "sample", "normal_cov" and additional column "decomposed_cov" that contains drycleaned normal sample outputs. See manual for details.
-#' 
-#' @param signal.thresh numeric (default == 0.5). This is the threshold to be used to identify an amplification (markers with signal intensity > 0.5) or deletions (markers with signal intensity < -0.5) in log space from dryclean outputs.
-#'
-#' @param pct.thresh numeric (default == 0.98). Proportion of samples in which a given marker is free of germline event.
-#'
-#' @param save.grm boolean (default == FALSE). If the germline list needs to be saved.     
-#' 
-#' @param path.to.save charater (default == NA). Path to save the germline list created if save.grm == TRUE.
-#' 
-#' @param num.cores interger (default == 1). Number of cores to use for parallelization.
-#'
-#' @param verbose boolean (default == TRUE). Outputs progress.
-#' 
-#' @return A GRange object with a metadata field annotating germline markers.
-#' 
-#' @author Aditya Deshpande
+## ##############################
+## ## identify_germline (depricated)
+## ##############################
+## #' @name identify_germline
+## #'
+## #' @title This is first phase in preparing the Panel of Normals (PON)
+## #' that will be used for online decomposition
+## #' 
+## #' @description This function takes in gRanges outputs from fragCounter and extracts GC corrected
+## #' read count data and carries rPCA decomposition on the matrix thus created
+## #' 
+## #' @export
+## #' @param normal.table.path character path to data.table containing two columns "sample", "normal_cov" and additional column "decomposed_cov" that contains drycleaned normal sample outputs. See manual for details.
+## #' 
+## #' @param signal.thresh numeric (default == 0.5). This is the threshold to be used to identify an amplification (markers with signal intensity > 0.5) or deletions (markers with signal intensity < -0.5) in log space from dryclean outputs.
+## #'
+## #' @param pct.thresh numeric (default == 0.98). Proportion of samples in which a given marker is free of germline event.
+## #'
+## #' @param save.grm boolean (default == FALSE). If the germline list needs to be saved.     
+## #' 
+## #' @param path.to.save charater (default == NA). Path to save the germline list created if save.grm == TRUE.
+## #' 
+## #' @param num.cores interger (default == 1). Number of cores to use for parallelization.
+## #'
+## #' @param verbose boolean (default == TRUE). Outputs progress.
+## #' 
+## #' @return A GRange object with a metadata field annotating germline markers.
+## #' 
+## #' @author Aditya Deshpande
 
-identify_germline <- function(normal.table.path = NA, signal.thresh = 0.5, pct.thresh = 0.98, verbose = TRUE, save.grm = FALSE, path.to.save = NA, num.cores = 1){
+## identify_germline <- function(normal.table.path = NA, signal.thresh = 0.5, pct.thresh = 0.98, verbose = TRUE, save.grm = FALSE, path.to.save = NA, num.cores = 1){
 
-    if (verbose){
-        message("Starting the preparation of Panel of Normal samples a.k.a detergent")
-    }
+##     if (verbose){
+##         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
+##     }
 
-    if (is.na(normal.table.path)){
-        stop("Need a table with paths to decomposed normal samples to identify germline events")
-    }
+##     if (is.na(normal.table.path)){
+##         stop("Need a table with paths to decomposed normal samples to identify germline events")
+##     }
     
-    if (is.na(path.to.save) & save.grm == TRUE){
-        stop("Need a path to save identified germline events")
-    }
+##     if (is.na(path.to.save) & save.grm == TRUE){
+##         stop("Need a path to save identified germline events")
+##     }
 
-    normal.table = readRDS(normal.table.path)
-    setkeyv(normal.table, "sample")
+##     normal.table = readRDS(normal.table.path)
+##     setkeyv(normal.table, "sample")
     
-    mat.pon = mclapply(normal.table[, sample], function(nm){
-        this.cov = tryCatch(readRDS(normal.table[nm, decomposed_cov]), error = function(e) NULL)
-        if (!is.null(this.cov)){
-            this.cov = gr2dt(this.cov)
-            reads = this.cov[, .(foreground.log)] 
-            reads = transpose(reads)
-        } else {reads = data.table(NA)}
-        return(reads)}, mc.cores = num.cores)
+##     mat.pon = mclapply(normal.table[, sample], function(nm){
+##         this.cov = tryCatch(readRDS(normal.table[nm, decomposed_cov]), error = function(e) NULL)
+##         if (!is.null(this.cov)){
+##             this.cov = gr2dt(this.cov)
+##             reads = this.cov[, .(foreground.log)] 
+##             reads = transpose(reads)
+##         } else {reads = data.table(NA)}
+##         return(reads)}, mc.cores = num.cores)
     
-    gc()
+##     gc()
     
-    mat.bind = rbindlist(mat.pon, fill = T)
-    ## mat.bind = na.omit(mat.bind)
-    mat.bind.t = transpose(mat.bind)
+##     mat.bind = rbindlist(mat.pon, fill = T)
+##     ## mat.bind = na.omit(mat.bind)
+##     mat.bind.t = transpose(mat.bind)
     
-    rm(mat.bind)
-    gc()
+##     rm(mat.bind)
+##     gc()
     
-    for(col in names(mat.bind.t)) set(mat.bind.t, i = which(abs(mat.bind.t[[col]]) > signal.thresh), j = col, value = NA) 
-    for(col in names(mat.bind.t)) set(mat.bind.t, i = which(!is.na(mat.bind.t[[col]])), j = col, value = 1)
-    for(col in names(mat.bind.t)) set(mat.bind.t, i = which(is.na(mat.bind.t[[col]])), j = col, value = 0)
+##     for(col in names(mat.bind.t)) set(mat.bind.t, i = which(abs(mat.bind.t[[col]]) > signal.thresh), j = col, value = NA) 
+##     for(col in names(mat.bind.t)) set(mat.bind.t, i = which(!is.na(mat.bind.t[[col]])), j = col, value = 1)
+##     for(col in names(mat.bind.t)) set(mat.bind.t, i = which(is.na(mat.bind.t[[col]])), j = col, value = 0)
 
-    gc()
+##     gc()
     
-    mat.bind.t[, black_list_pct := rowSums(.SD)/dim(mat.bind.t)[2]]
+##     mat.bind.t[, black_list_pct := rowSums(.SD)/dim(mat.bind.t)[2]]
     
-    mat.bind.t[, germline.status := ifelse(black_list_pct > pct.thresh, FALSE, TRUE)]
+##     mat.bind.t[, germline.status := ifelse(black_list_pct > pct.thresh, FALSE, TRUE)]
 
-    if (nrow(mat.bind.t[germline.status == FALSE]) < 0.5 * nrow(mat.bind.t)){
-        warning("More than 50% markers classified as germline, consider adjusting thresholds.")
-    }
+##     if (nrow(mat.bind.t[germline.status == FALSE]) < 0.5 * nrow(mat.bind.t)){
+##         warning("More than 50% markers classified as germline, consider adjusting thresholds.")
+##     }
     
-    template = readRDS(normal.table[1, normal_cov])
-    values(template) <- NULL
-    template$germline.status <- mat.bind.t$germline.status
+##     template = readRDS(normal.table[1, normal_cov])
+##     values(template) <- NULL
+##     template$germline.status <- mat.bind.t$germline.status
 
     
-    rm(mat.bind.t)
-    gc()
+##     rm(mat.bind.t)
+##     gc()
 
-    if (verbose){ 
-        message("Finished identifying germline markers based pn thresholds provided and saving it to the path provided")
-    }
+##     if (verbose){ 
+##         message("Finished identifying germline markers based pn thresholds provided and saving it to the path provided")
+##     }
 
-    if (save.grm){
-        saveRDS(template, paste0(path.to.save, "/germline.markers.rds"))
-    }
+##     if (save.grm){
+##         saveRDS(template, paste0(path.to.save, "/germline.markers.rds"))
+##     }
 
-    return(template)
+##     return(template)
 
-}
+## }
 
 
 ##############################
@@ -573,17 +576,17 @@ wash_cycle <- function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat
     }
 
     U = U.hat %*% sqrt(diag(sigma.hat))
-    A = matrix(0, r, r)
-    B = matrix(0, m, r)
+    ## A = matrix(0, r, r)
+    ## B = matrix(0, m, r)
     
     if (verbose == TRUE){
         message("calculating A and B")
     }
 
-    for (i in 1:dim(V.hat)[2]){
-        A = A + outer(V.hat[, i], V.hat[, i])
-        B = B + outer((L.burnin[, i] - S.burnin[, i]), V.hat[, i])
-    }
+    #for (i in 1:dim(V.hat)[2]){
+    #    A = A + outer(V.hat[, i], V.hat[, i])
+    #    B = B + outer((L.burnin[, i] - S.burnin[, i]), V.hat[, i])
+    #}
 
     if (verbose == TRUE){
         message("calculating v and s")
@@ -594,14 +597,14 @@ wash_cycle <- function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat
     si = as.numeric(projection[[2]])
     vi.subtract = V.hat[, 1]
     V.hat = cbind(V.hat, vi)
-    A = A + outer(vi, vi) - outer(vi.subtract, vi.subtract)
-    B = B + outer((as.numeric(m.vec) - si), vi) - outer((L.burnin[, 1] - S.burnin[, 1]), vi.subtract)
+    #A = A + outer(vi, vi) - outer(vi.subtract, vi.subtract)
+    #B = B + outer((as.numeric(m.vec) - si), vi) - outer((L.burnin[, 1] - S.burnin[, 1]), vi.subtract)
 
     if (verbose == TRUE){
-        message("Updating subspace")
+        message("Calculating b")
     }
 
-    U = update_cols(U, A, B, lambda1)
+    ## U = update_cols(U, A, B, lambda1)
     L.vec = U %*% vi
 
     return(list(L.vec, si))
@@ -705,8 +708,8 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
         message(paste0("Let's begin, this is whole exome/genome"))
     }
 
-    if (germline.filter & is.na(germline.file)){
-        stop("If germiline.filter is set to TRUE, provide path to germline marker file")
+    if (germline.filter & is.null(rpca.1$inf_germ)){
+        stop("If germiline.filter is set to TRUE, pon must have a inf_germ element, see prepare_detergent for details")
     }
 
     all.chr = c(as.character(1:22), "X")
@@ -777,7 +780,7 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     cov[is.infinite(log.reads), log.reads := NA]
 
     if (germline.filter){
-        germ.file = readRDS(germline.file)
+        germ.file = rpca.1$inf_germ
         cov$germline.status = germ.file$germline.status
         cov[germline.status == TRUE, foreground := NA]
         cov[germline.status == TRUE, foreground.log := NA]
@@ -794,4 +797,91 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
 
 message("Giddy up 4!")
 
-    
+
+
+
+collapse_cov <- function(cov.gr, bin.size = target_resolution, this.field = field){
+    BINSIZE.ROUGH = bin.size
+    cov.gr = cov.gr[, this.field]
+    cov.gr = gr2dt(cov.gr)
+    setnames(cov.gr, this.field, "signal")
+    cov.gr = cov.gr[!is.infinite(signal), .(signal = median(signal, na.rm = TRUE)),
+                    by = .(seqnames, start = floor(start/BINSIZE.ROUGH)*BINSIZE.ROUGH+1)]
+    cov.gr[, end := (start + BINSIZE.ROUGH) - 1]
+    setnames(cov.gr, "signal", this.field)
+    cov.gr = dt2gr(cov.gr)
+    return(cov.gr)
+}
+
+
+generate_template <- function(cov, wgs = wgs, target_resolution = target_resolution, this.field = field){
+    all.chr = c(as.character(1:22), "X")
+    if (wgs){
+        inferred_resolution = median(width(cov), na.rm = T)
+        if (target_resolution > inferred_resolution){
+            cov = collapse_cov(cov, this.field = "count", bin.size = target_resolution)
+        }
+    }
+    cov = sortSeqlevels(cov)
+    cov = sort(cov)
+    cov = cov %Q% (seqnames %in% all.chr)
+    template = cov[, c()]
+    return(template)
+}
+
+
+
+## Coming soon...
+
+## library(khtools)    
+## standardize_coverage <- function(cov, template, wgs = wgs, target_resolution = target_resolution, this.field = field){
+##     all.chr = c(as.character(1:22), "X")
+##     cov = .gc(cov, "^count$|^reads$")
+##     mcols(cov) = setcols2(mcols(cov), c("count"), "reads")
+##     cov = gr2dt(cov)
+##     cov = cov[seqnames %in% all.chr]
+##     cov[, mean.count := mean(reads, na.rm = T)]
+##     cov[, reads.corrected := reads/mean.count]
+##     if (wgs){
+##         inferred_resolution = median(width(dt2gr(cov)), na.rm = T)
+##         if (target_resolution > inferred_resolution){        
+##             cov = collapse_cov(dt2gr(cov), this.field = this.field, bin.size = target_resolution)
+##         }
+##     }
+##     cov = gr.val(query = template, cov, val = "reads.corrected", na.rm = TRUE)
+##     return(cov)
+## }
+
+## setcols2 <- function (dt, old, new) {
+##     if (inherits(dt, c("GRanges", "GRangesList"))) {
+##         mcols(dt) = setcols(mcols(dt), old, new)
+##         return(dt)
+##     }
+##     cnames = colnames2(dt)
+##     if (missing(new) || missing(old)) {
+##         if (missing(old)) {
+##             old = new
+##         }
+##         if (is.character(old) && length(old) == length(cnames)) {
+##             colnames(dt) = old
+##             return(dt)
+##         }
+##         else {
+##             stop("names provided must be same length as ncol(dt)")
+##         }
+##     }
+##     if (is.character(old)) {
+##         out = merge(data.frame(cnames, seq_along(cnames)), data.frame(cnames = old, new = new), allow.cartesian = T)
+##         cnames[out[[2]]] = as.character(out[[3]])
+##         colnames(dt) = cnames
+##         return(dt)
+##     }
+##     if (is.logical(old)) {
+##         if (!length(old) == length(cnames)) 
+##             stop("logical vector must be same length as ncol(dt)")
+##         old = which(old)
+##     }
+##     cnames[old] = new
+##     colnames(dt) = cnames
+##     return(dt)
+## }

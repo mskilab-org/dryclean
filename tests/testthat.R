@@ -1,4 +1,4 @@
 library(testthat)
-library(dryclean)
+library(chromunity)
 
-test_check("dryclean")
+test_check("chromunity")
