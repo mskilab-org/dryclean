@@ -20,7 +20,12 @@ prepare_detergent(
   build = "hg19",
   field = "reads.corrected",
   PAR.file = NULL,
-  balance = FALSE
+  balance = TRUE,
+  infer.germline = TRUE,
+  signal.thresh = 0.3,
+  pct.thresh = 0.8,
+  wgs = TRUE,
+  target_resolution = 1000
 )
 }
 \arguments{
@@ -52,7 +57,17 @@ prepare_detergent(
 
 \item{PAR.file}{this is a GRanges with the boundaries of PAR region in X chr.}
 
-\item{balance}{Boolean (default == FALSE) experimental variable to take into consideration 1 copy of X chr in male sample}
+\item{balance}{Boolean (default == TRUE) experimental variable to take into consideration 1 copy of X chr in male sample}
+
+\item{infer.germline}{use the L matrix to infer germline events.}
+
+\item{signal.thresh}{numeric (default == 0.5). This is the threshold to be used to identify an amplification (markers with signal intensity > 0.5) or deletions (markers with signal intensity < -0.5) in log space from dryclean outputs.}
+
+\item{pct.thresh}{numeric (default == 0.98). Proportion of samples in which a given marker is free of germline event.}
+
+\item{wgs}{boolean for whether whole genome is being used}
+
+\item{target_resolution}{numeric (default == 1e3) resolution at which to conduct analyses}
 }
 \value{
 \code{prepare_detergent} returns a list containing the following components:

@@ -68,6 +68,16 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @param PAR.file this is a GRanges with the boundaries of PAR region in X chr.
 #'
 #' @param balance Boolean (default == TRUE) experimental variable to take into consideration 1 copy of X chr in male sample
+#'
+#' @param infer.germline use the L matrix to infer germline events.
+#'
+#' @param signal.thresh numeric (default == 0.5). This is the threshold to be used to identify an amplification (markers with signal intensity > 0.5) or deletions (markers with signal intensity < -0.5) in log space from dryclean outputs.
+#'
+#' @param pct.thresh numeric (default == 0.98). Proportion of samples in which a given marker is free of germline event.
+#'
+#' @param wgs boolean for whether whole genome is being used
+#'
+#' @param target_resolution numeric (default == 1e3) resolution at which to conduct analyses
 #' 
 #' @return \code{prepare_detergent} returns a list containing the following components:
 #' 
@@ -819,7 +829,7 @@ generate_template <- function(cov, wgs = wgs, target_resolution = target_resolut
     if (wgs){
         inferred_resolution = median(width(cov), na.rm = T)
         if (target_resolution > inferred_resolution){
-            cov = collapse_cov(cov, this.field = "count", bin.size = target_resolution)
+            cov = collapse_cov(cov, this.field = this.field, bin.size = target_resolution)
         }
     }
     cov = sortSeqlevels(cov)

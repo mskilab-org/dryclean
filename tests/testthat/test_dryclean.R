@@ -61,18 +61,18 @@ test_that("wash_cycle", {
 
 test_that("prepare_detergent", {
     expect_error(prepare_detergent(normal_table.path, save.pon = TRUE))
-    all.smp = prepare_detergent(normal.table.path = normal_table.path, tolerance = 0.4)
-    expect_true(identical(names(all.smp), c("L", "S","err", "k", "U.hat", "V.hat", "sigma.hat")))
-    hclust.smp = prepare_detergent(normal.table.path = normal_table.path, use.all = FALSE, choose.by.clustering = TRUE, number.of.samples = 3, tolerance = 0.4)
-    expect_true(identical(names(hclust.smp), c("L", "S","err", "k", "U.hat", "V.hat", "sigma.hat")))
+    all.smp = prepare_detergent(normal.table.path = normal_table.path, tolerance = 0.4, target_resolution = 3)
+    expect_true(identical(names(all.smp), c("L", "S","err", "k", "U.hat", "V.hat", "sigma.hat", "template", "inf_germ")))
+    hclust.smp = prepare_detergent(normal.table.path = normal_table.path, use.all = FALSE, choose.by.clustering = TRUE, number.of.samples = 3, tolerance = 0.4, target_resolution = 3)
+    expect_true(identical(names(hclust.smp), c("L", "S","err", "k", "U.hat", "V.hat", "sigma.hat", "template", "inf_germ")))
 })
 
 
-test_that("identify_germline", {
-    expect_error(identify_germline(normal_table.path, save.grm = TRUE))
-    all.smp = identify_germline(normal.table.path = normal_table.path)
-    expect_true(colnames(values(all.smp)) == "germline.status")
-})
+#test_that("identify_germline", {
+#    expect_error(identify_germline(normal_table.path, save.grm = TRUE))
+#    all.smp = identify_germline(normal.table.path = normal_table.path)
+#    expect_true(colnames(values(all.smp)) == "germline.status")
+#})
 
 
 test_that("start_wash_cycle", {
