@@ -18,6 +18,7 @@
 #' @importFrom stats na.omit
 #' @importFrom MASS ginv
 #' @importFrom utils globalVariables
+#' @importFrom parallel mclapply
 #' @import gUtils
 #' @import pbmcapply
 
