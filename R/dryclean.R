@@ -103,7 +103,7 @@ globalVariables(c(".", "..ix", "L", "L1", "V1", "black_list_pct", "blacklisted",
 #' @author Aditya Deshpande
 
 
-prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected", PAR.file = NULL, balance = TRUE, infer.germline = TRUE, signal.thresh = 0.3, pct.thresh = 0.80, wgs = TRUE, target_resolution = 1000){
+prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, path.to.save = NA, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected", PAR.file = NULL, balance = TRUE, infer.germline = TRUE, signal.thresh = 0.3, pct.thresh = 0.80, wgs = TRUE, target_resolution = 1000, all.chr = c(as.character(1:22), "X")){
     
     if (verbose){
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
@@ -129,8 +129,6 @@ prepare_detergent <- function(normal.table.path = NA, use.all = TRUE, choose.ran
     if (use.all & choose.randomly | use.all & choose.by.clustering | choose.randomly & choose.by.clustering | use.all & choose.randomly & choose.by.clustering){
         stop("only one of use.all, choose.randomly, choose.by.clustering can be set to TRUE. Rectify and restart")
     }
-
-    all.chr = c(as.character(1:22), "X")
 
     template = generate_template(cov = readRDS(normal.table[1]$normal_cov), wgs = wgs, target_resolution = target_resolution, this.field = field)
     
@@ -239,11 +237,10 @@ If this is not the correct build, please provide a GRange object delineating for
 
     message(paste0(nrow(samp.final), " files present"))
     
-    mat.n = pbmclapply(samp.final[, sample], function(nm){
+    mat.n = pbmclapply(samp.final[, sample], function(nm, all.chr){
         this.cov = tryCatch(readRDS(samp.final[sample == nm, normal_cov]), error = function(e) NULL)
         if (!is.null(this.cov)){
             ## this.cov = standardize_coverage(cov = gr.nochr(this.cov), template = template, wgs = wgs, target_resolution = target_resolution, this.field = field)
-            all.chr = c(as.character(1:22), "X")
             this.cov = this.cov %Q% (seqnames %in% all.chr)
             this.cov = sortSeqlevels(this.cov)
             this.cov = sort(this.cov)
@@ -272,7 +269,7 @@ If this is not the correct build, please provide a GRange object delineating for
                 return(reads)
             } 
         } 
-    }, mc.cores = num.cores)
+    }, all.chr = all.chr, mc.cores = num.cores)
     gc()
     mat.bind = rbindlist(mat.n, fill = T)
 
@@ -359,16 +356,6 @@ If this is not the correct build, please provide a GRange object delineating for
 ## #' 
 ## #' @author Aditya Deshpande
 
-## identify_germline <- function(normal.table.path = NA, signal.thresh = 0.5, pct.thresh = 0.98, verbose = TRUE, save.grm = FALSE, path.to.save = NA, num.cores = 1){
-
-##     if (verbose){
-##         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
-##     }
-
-##     if (is.na(normal.table.path)){
-##         stop("Need a table with paths to decomposed normal samples to identify germline events")
-##     }
-    
 ##     if (is.na(path.to.save) & save.grm == TRUE){
 ##         stop("Need a path to save identified germline events")
 ##     }
@@ -411,8 +398,6 @@ If this is not the correct build, please provide a GRange object delineating for
 ##     template = readRDS(normal.table[1, normal_cov])
 ##     values(template) <- NULL
 ##     template$germline.status <- mat.bind.t$germline.status
-
-    
 ##     rm(mat.bind.t)
 ##     gc()
 
@@ -702,7 +687,7 @@ prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA)
 
 
 
-start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE){
+start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE, all.chr = c(as.character(1:22), "X")){
 
     if(verbose == TRUE){
         message("Loading PON a.k.a detergent from path provided")
@@ -722,7 +707,7 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
         stop("If germiline.filter is set to TRUE, pon must have a inf_germ element, see prepare_detergent for details")
     }
 
-    all.chr = c(as.character(1:22), "X")
+    #all.chr = c(as.character(1:22), "X")
 
     is.chr = FALSE
     
@@ -731,9 +716,10 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
             cov = gr.sub(cov)
             is.chr = TRUE
         }
-        cov = cov %Q% (seqnames %in% all.chr)
+        #cov = cov %Q% (seqnames %in% all.chr)
     }
-    
+    local.all.chr = all.chr
+    cov = cov %Q% (seqnames %in% local.all.chr)
     cov = cov[, field] %>% gr2dt() %>% setnames(., field, "signal") %>% dt2gr()
     cov = sortSeqlevels(cov)
     cov = sort(cov)
