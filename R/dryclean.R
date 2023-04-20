@@ -819,7 +819,7 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
         # Let's add a proper merging of the 'germline.status'
         germ.file = rpca.1$inf_germ
         germ.file.dt = gUtils::gr2dt(germ.file)
-        cov = data.table::merge.data.table(x = cov, y = germ.file.dt, all.x = T)
+        cov_with_germline_status = data.table::merge.data.table(x = cov, y = germ.file.dt, all.x = T)
 
         # 
         #cov[germline.status == TRUE, foreground := NA]
@@ -834,7 +834,7 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     if (is.chr){
         cov = gr.chr(cov)
     }
-    return(cov)
+    return(cov_with_germline_status)
 }
 
 message("Giddy up 4!")
