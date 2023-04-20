@@ -818,8 +818,10 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
         # Therefore, the germline.status vector is recycled and overall assigned improperly.
         # Let's add a proper merging of the 'germline.status'
         germ.file = rpca.1$inf_germ
+        germ.file = gUtils::gr.nochr(germ.file)                 # Need to strip the chr to match the input 'cov'
         germ.file.dt = gUtils::gr2dt(germ.file)
-        cov_with_germline_status = data.table::merge.data.table(x = cov, y = germ.file.dt, by = c("seqnames", "start", "end"), all = T)
+        cov_with_germline_status = data.table::merge.data.table(x = cov, y = germ.file.dt,
+                                                                by = c("seqnames", "start", "end"), all.x = T)
 
         # 
         #cov[germline.status == TRUE, foreground := NA]
@@ -829,12 +831,12 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
         #cov = na.omit(cov)
     }
 
-    #cov = dt2gr(cov)
+    cov = dt2gr(cov)
 
-    #if (is.chr){
-    #    cov = gr.chr(cov)
-    #}
-    return(cov)
+    if (is.chr){
+        cov = gr.chr(cov)
+    }
+    return(cov_with_germline_status)
 }
 
 message("Giddy up 4!")
