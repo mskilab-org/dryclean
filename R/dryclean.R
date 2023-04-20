@@ -819,7 +819,7 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
         germ.file = rpca.1$inf_germ
 
         # Let's add a proper merging of the 'germline.status'
-        cov_with_germline_status = cov %$% germ.file
+        cov_with_germline_status = gUtils::`%$%`(cov, germ.file)
         cov$germline.status = cov_with_germline_status$germline.status
 
         # 
