@@ -829,12 +829,12 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
         #cov = na.omit(cov)
     }
 
-    cov = dt2gr(cov)
+    #cov = dt2gr(cov)
 
-    if (is.chr){
-        cov = gr.chr(cov)
-    }
-    return(cov_with_germline_status)
+    #if (is.chr){
+    #    cov = gr.chr(cov)
+    #}
+    return(cov)
 }
 
 message("Giddy up 4!")
