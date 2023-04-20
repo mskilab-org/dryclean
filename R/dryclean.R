@@ -823,8 +823,8 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
         cov$germline.status = cov_with_germline_status$germline.status
 
         # 
-        cov[germline.status == TRUE, foreground := NA]
-        cov[germline.status == TRUE, foreground.log := NA]
+        #cov[germline.status == TRUE, foreground := NA]
+        #cov[germline.status == TRUE, foreground.log := NA]
 
         # This line causes the issue as it removes any GR with a NA value, not just in important variables.
         #cov = na.omit(cov)
