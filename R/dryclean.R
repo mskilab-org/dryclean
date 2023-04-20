@@ -784,18 +784,32 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     setnames(cov, "signal", "input.read.counts")
     cov = cbind(decomposed[[2]], cov)
     colnames(cov)[1] = 'foreground.log'
-    cov[is.na(input.read.counts), foreground.log := NA]
+
+    # pblaney - Thu, Apr 20, 2023
+    # The NAs in the final output of 'foreground' is causing issues in JaBbA analysis
+    # specifically, the regions are either NA or excluded from the output all together (if germline.filter set).
+    #
+    # Testing functionality and stability of altering NA values for:
+    #     1. if input reads are NA
+    #     2. if region overlaps with germline region
+    #
+    # The new value for 'foreground.log' will -10. This was chosen so the value for 'foreground' will be a near-zero value (i.e. exp(-10)).
+    # The same will be done for 'background.log' and 'background'.
+    cov[is.na(input.read.counts), foreground.log := -10]        # Changed NA to -10
     cov[, foreground := exp(foreground.log)]
     cov[input.read.counts == 0, foreground := 0]
-    cov[is.na(input.read.counts), foreground := NA]
+    #cov[is.na(input.read.counts), foreground := NA]            # Not needed as 'foreground' will be calculated
     cov = cbind(decomposed[[1]], cov)
     colnames(cov)[1] = 'background.log'
-    cov[is.na(input.read.counts), background.log := NA]
+    cov[is.na(input.read.counts), background.log := -10]        # Changed NA to -10
     cov[, background := exp(background.log) ]
     cov[input.read.counts == 0, background := 0]
-    cov[is.na(input.read.counts), background := NA]
+    #cov[is.na(input.read.counts), background := NA]            # Not needed as 'background' will be calculated
     cov[, log.reads := log(input.read.counts)]
     cov[is.infinite(log.reads), log.reads := NA]
+
+    # Continuation from Thu, Apr 20, 2023
+    # 
 
     if (germline.filter){
         germ.file = rpca.1$inf_germ
