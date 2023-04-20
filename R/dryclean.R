@@ -816,10 +816,10 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
 
         # The original logic causes issues as the input fragCounter coverage is not the same length as the drylean PoN.
         # Therefore, the germline.status vector is recycled and overall assigned improperly.
-        germ.file = rpca.1$inf_germ
-
         # Let's add a proper merging of the 'germline.status'
-        cov_with_germline_status = gUtils::dt2gr(cov) %$% germ.file
+        germ.file = rpca.1$inf_germ
+        germ.file.dt = gUtils::gr2dt(germ.file)
+        cov_with_germline_status = merge(cov, germ.file.dt, all.x = T)
         cov$germline.status = cov_with_germline_status$germline.status
 
         # 
