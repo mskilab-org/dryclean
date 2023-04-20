@@ -791,7 +791,8 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     #
     # Testing functionality and stability of altering NA values for:
     #     1. if input reads are NA
-    #     2. if region overlaps with germline region
+    #     2. if log input reads are infinite
+    #     3. if region overlaps with germline region
     #
     # The new value for 'foreground.log' will -10. This was chosen so the value for 'foreground' will be a near-zero value (i.e. exp(-10)).
     # The same will be done for 'background.log' and 'background'.
@@ -806,17 +807,27 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     cov[input.read.counts == 0, background := 0]
     #cov[is.na(input.read.counts), background := NA]            # Not needed as 'background' will be calculated
     cov[, log.reads := log(input.read.counts)]
-    cov[is.infinite(log.reads), log.reads := NA]
+    cov[is.infinite(log.reads), log.reads := -10]               # Changed NA to -10
 
     # Continuation from Thu, Apr 20, 2023
-    # 
-
+    # The na.omit line here removes many regions of the coverage GR. Not entirely sure why omit the region if germline.
+    # I think a better logic would be to set the 'foreground' equal to the 'background'.
     if (germline.filter){
+
+        # The original logic causes issues as the input fragCounter coverage is not the same length as the drylean PoN.
+        # Therefore, the germline.status vector is recycled and overall assigned improperly.
         germ.file = rpca.1$inf_germ
-        cov$germline.status = germ.file$germline.status
+
+        # Let's add a proper merging of the 'germline.status'
+        cov_with_germline_status = cov %$% germ.file
+        cov$germline.status = cov_with_germline_status$germline.status
+
+        # 
         cov[germline.status == TRUE, foreground := NA]
         cov[germline.status == TRUE, foreground.log := NA]
-        cov = na.omit(cov)
+
+        # This line causes the issue as it removes any GR with a NA value, not just in important variables.
+        #cov = na.omit(cov)
     }
 
     cov = dt2gr(cov)
