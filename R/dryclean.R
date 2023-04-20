@@ -794,20 +794,20 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     #     2. if log input reads are infinite
     #     3. if region overlaps with germline region
     #
-    # The new value for 'foreground.log' will -10. This was chosen so the value for 'foreground' will be a near-zero value (i.e. exp(-10)).
+    # The new value for 'foreground.log' will -5. This was chosen so the value for 'foreground' will be a near-zero value (i.e. exp(-5)).
     # The same will be done for 'background.log' and 'background'.
-    cov[is.na(input.read.counts), foreground.log := -10]        # Changed NA to -10
+    cov[is.na(input.read.counts), foreground.log := -5]        # Changed NA to -5
     cov[, foreground := exp(foreground.log)]
     cov[input.read.counts == 0, foreground := 0]
     #cov[is.na(input.read.counts), foreground := NA]            # Not needed as 'foreground' will be calculated
     cov = cbind(decomposed[[1]], cov)
     colnames(cov)[1] = 'background.log'
-    cov[is.na(input.read.counts), background.log := -10]        # Changed NA to -10
+    cov[is.na(input.read.counts), background.log := -5]        # Changed NA to -5
     cov[, background := exp(background.log) ]
     cov[input.read.counts == 0, background := 0]
     #cov[is.na(input.read.counts), background := NA]            # Not needed as 'background' will be calculated
     cov[, log.reads := log(input.read.counts)]
-    cov[is.infinite(log.reads), log.reads := -10]               # Changed NA to -10
+    cov[is.infinite(log.reads), log.reads := -5]               # Changed NA to -5
 
     # Continuation from Thu, Apr 20, 2023
     # The na.omit line here removes many regions of the coverage GR. Not entirely sure why omit the region if germline.
@@ -823,12 +823,14 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
         cov_with_germline_status = data.table::merge.data.table(x = cov, y = germ.file.dt,
                                                                 by = c("seqnames", "start", "end"), all.x = T)
 
-        # 
-        #cov[germline.status == TRUE, foreground := NA]
-        #cov[germline.status == TRUE, foreground.log := NA]
+        # Now prepare final output
+        cov_with_germline_status = cov_with_germline_status[,-c(6,7,13:15)]     # Remove unneeded lines
+        cov_with_germline_status[germline.status == TRUE, foreground := background]
+        cov_with_germline_status[germline.status == TRUE, foreground.log := background.log]
 
         # This line causes the issue as it removes any GR with a NA value, not just in important variables.
         #cov = na.omit(cov)
+        cov = cov_with_germline_status
     }
 
     cov = dt2gr(cov)
