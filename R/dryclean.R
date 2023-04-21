@@ -811,7 +811,7 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
 
     # Continuation from Thu, Apr 20, 2023
     # The na.omit line here removes many regions of the coverage GR. Not entirely sure why omit the region if germline.
-    # I think a better logic would be to set the 'foreground' equal to the 'background'.
+    # I think a better logic would be to set the 'foreground' equal to the median of the chromosome.
     if (germline.filter){
 
         # The original logic causes issues as the input fragCounter coverage is not the same length as the drylean PoN.
@@ -825,8 +825,8 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
 
         # Now prepare final output
         cov_with_germline_status = cov_with_germline_status[,-c(6,7,13:15)]     # Remove unneeded lines
-        cov_with_germline_status[germline.status == TRUE, foreground := background]
-        cov_with_germline_status[germline.status == TRUE, foreground.log := background.log]
+        cov_with_germline_status[germline.status == TRUE, foreground := median.chr]
+        cov_with_germline_status[germline.status == TRUE, foreground.log := log(median.chr)]
 
         # This line causes the issue as it removes any GR with a NA value, not just in important variables.
         #cov = na.omit(cov)
