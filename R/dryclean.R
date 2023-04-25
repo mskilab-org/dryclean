@@ -784,25 +784,53 @@ start_wash_cycle <- function(cov, mc.cores = 1, detergent.pon.path = NA, verbose
     setnames(cov, "signal", "input.read.counts")
     cov = cbind(decomposed[[2]], cov)
     colnames(cov)[1] = 'foreground.log'
-    cov[is.na(input.read.counts), foreground.log := NA]
+
+    # pblaney - Thu, Apr 20, 2023
+    # The NAs in the final output of 'foreground' is causing issues in JaBbA analysis
+    # specifically, the regions are either NA or excluded from the output all together (if germline.filter set).
+    #
+    # Testing functionality and stability of altering NA values for:
+    #     1. if input reads are NA
+    #     2. if log input reads are infinite
+    #     3. if region overlaps with germline region
+    #
+    # The new value for 'foreground.log' will -5. This was chosen so the value for 'foreground' will be a near-zero value (i.e. exp(-5)).
+    # The same will be done for 'background.log' and 'background'.
+    cov[is.na(input.read.counts), foreground.log := -5]        # Changed NA to -5
     cov[, foreground := exp(foreground.log)]
     cov[input.read.counts == 0, foreground := 0]
-    cov[is.na(input.read.counts), foreground := NA]
+    #cov[is.na(input.read.counts), foreground := NA]            # Not needed as 'foreground' will be calculated
     cov = cbind(decomposed[[1]], cov)
     colnames(cov)[1] = 'background.log'
-    cov[is.na(input.read.counts), background.log := NA]
+    cov[is.na(input.read.counts), background.log := -5]        # Changed NA to -5
     cov[, background := exp(background.log) ]
     cov[input.read.counts == 0, background := 0]
-    cov[is.na(input.read.counts), background := NA]
+    #cov[is.na(input.read.counts), background := NA]            # Not needed as 'background' will be calculated
     cov[, log.reads := log(input.read.counts)]
-    cov[is.infinite(log.reads), log.reads := NA]
+    cov[is.infinite(log.reads), log.reads := -5]               # Changed NA to -5
 
+    # Continuation from Thu, Apr 20, 2023
+    # The na.omit line here removes many regions of the coverage GR. Not entirely sure why omit the region if germline.
+    # I think a better logic would be to set the 'foreground' equal to the median of the chromosome.
     if (germline.filter){
+
+        # The original logic causes issues as the input fragCounter coverage is not the same length as the drylean PoN.
+        # Therefore, the germline.status vector is recycled and overall assigned improperly.
+        # Let's add a proper merging of the 'germline.status'
         germ.file = rpca.1$inf_germ
-        cov$germline.status = germ.file$germline.status
-        cov[germline.status == TRUE, foreground := NA]
-        cov[germline.status == TRUE, foreground.log := NA]
-        cov = na.omit(cov)
+        germ.file = gUtils::gr.nochr(germ.file)                 # Need to strip the chr to match the input 'cov'
+        germ.file.dt = gUtils::gr2dt(germ.file)
+        cov_with_germline_status = data.table::merge.data.table(x = cov, y = germ.file.dt,
+                                                                by = c("seqnames", "start", "end"), all.x = T)
+
+        # Now prepare final output
+        cov_with_germline_status = cov_with_germline_status[,-c(6,7,13:15)]     # Remove unneeded lines
+        cov_with_germline_status[germline.status == TRUE, foreground := median.chr]
+        cov_with_germline_status[germline.status == TRUE, foreground.log := log(median.chr)]
+
+        # This line causes the issue as it removes any GR with a NA value, not just in important variables.
+        #cov = na.omit(cov)
+        cov = cov_with_germline_status
     }
 
     cov = dt2gr(cov)
