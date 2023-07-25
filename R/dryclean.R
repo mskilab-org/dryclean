@@ -45,7 +45,7 @@
 #' @description This is the frist stage and involves preparing the Panel of Normals (PON)
 #' that will be used for online decomposition. Author: Aditya Deshpande
 #' @details This function takes in gRanges outputs from fragCounter and extracts GC corrected
-#' read count data and carries rPCA decomposition on the matrix thus created. The normal samples used to form the PON can be selected randomly or by clustering the genomic bacground or all samples can be used.
+#' read count data and carries rPCA decomposition on the matrix thus created. The normal samples used to form the PON can be selected randomly or by clustering the genomic background or all samples can be used.
 #' 
 #' @param use.all boolean (default == TRUE). If all normal samples are to be used for creating PON.
 #' 
@@ -98,7 +98,7 @@
 #' 
 #' @param whole_genome boolean (default = TRUE). For this function always set this parameter to TRUE.
 #' 
-#' @param use.blacklist boolean (default = FALSE). Whether to exclude off-target markers in case of Exomes or targeted sequqnecing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not.
+#' @param use.blacklist boolean (default = FALSE). Whether to exclude off-target markers in case of Exomes or targeted sequencing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not.
 #'
 #' @param germline.filter boolean (default == FALSE). If germline markers need to be removed from decomposition.
 #'
@@ -110,7 +110,7 @@
 #' 
 #' @param field character (default == "reads.corrected"). Field to use for processing.
 #' 
-#' @param chr integer (default == NA). Depricated. Can be used to decompose a single chromosome.
+#' @param chr integer (default == NA). Depracated. Can be used to decompose a single chromosome.
 #'
 #' @param all.chr list(default = c(as.character(1:22), "X")) list of chromosomes
 #'
@@ -146,7 +146,7 @@
 #'
 #' @export
 #' 
-#' @author Aditya Deshpande <Addy's email>, Sebastian Brylka <sebastian.brylka@nyulangone.org> 
+#' @author Aditya Deshpande <asd3002@med.cornell.edu>, Sebastian Brylka <sebastian.brylka@nyulangone.org> 
 
 
 dryclean <- R6::R6Class("dryclean",
