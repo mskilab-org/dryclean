@@ -29,7 +29,7 @@ m.vec.path = system.file("extdata", "m.vec.rds", package = 'dryclean')
 
 
 test_that("prep_cov", {
-  source("~/git/dryclean/R/helper_functions.R")
+  source("R/helper_functions.R")
   field = "reads.corrected"
   sample.1 = readRDS(sample.1.path)
   sample.1 = sample.1[, field] %>% gr2dt() %>% setnames(., field, "signal") %>% dt2gr()
@@ -40,7 +40,7 @@ test_that("prep_cov", {
 
 
 test_that("apg_project", {
-  source("~/git/dryclean/R/helper_functions.R")
+  source("R/helper_functions.R")
   m.vec = readRDS(m.vec.path)
   U = readRDS(U.path)
   proj = apg_project(m.vec = m.vec, U = U, lambda1 = 0.0001, lambda2 = 0.0001)
@@ -50,7 +50,7 @@ test_that("apg_project", {
 
 
 test_that("wash_cycle", {
-  source("~/git/dryclean/R/helper_functions.R")
+  source("R/helper_functions.R")
   batch_outputs = readRDS(batch_outputs.path)
   m.vec = readRDS(m.vec.path)
   samp.test = wash_cycle(m.vec = m.vec, L.burnin = batch_outputs$L, S.burnin = batch_outputs$S, r = batch_outputs$k, U.hat = batch_outputs$U.hat, V.hat = batch_outputs$V.hat, sigma.hat = batch_outputs$sigma.hat, verbose = FALSE)
@@ -60,7 +60,7 @@ test_that("wash_cycle", {
 
 
 test_that("prepare_detergent", {
-  source("~/Projects/sb_dryclean/R/dryclean.R")
+  source("R/dryclean.R")
   dryclean_object = dryclean$new(
     normal_table_path = normal_table.path, 
     cov_path = sample.1.path)
@@ -74,7 +74,7 @@ test_that("prepare_detergent", {
 
 
 test_that("start_wash_cycle", {
-  source("~/Projects/sb_dryclean/R/dryclean.R")
+  source("R/dryclean.R")
   dryclean_object = dryclean$new(
     pon_path = detergent.path, 
     cov_path = sample.1.path)

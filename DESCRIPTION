@@ -1,4 +1,4 @@
-Package: sb_dryclean
+Package: dryclean
 Title: rPCA based method to de-noise genomic coverage data
 Version: 0.0.2
 Authors@R: c(person("Aditya", "Deshpande", role = c("aut", "cre"), email = "asd3002@med.cornell.edu"), 
