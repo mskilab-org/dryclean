@@ -567,26 +567,5 @@ dryclean <- R6::R6Class("dryclean",
 )
 
 
-# TESTING
-
-library(data.table)
-library(GenomicRanges)
-library(skitools)
-library(rsvd)
-library(MASS)
-
-
-dryclean_object <- dryclean$new(
-  normal_table_path = "~/lab/lib/R-4.0.2/dryclean/extdata/normal_table.rds", 
-  #pon_path = "/gpfs/commons/home/sbrylka/Projects/dryclean/pon_test.rds",
-  cov_path = "~/lab/lib/R-4.0.2/dryclean/extdata/dummy_coverage.rds")
-
-dryclean_object
-
-dryclean_object$prepare_detergent()
-
-dryclean_object$start_wash_cycle()
-
-dryclean_object$get_drycleaned_cov()
 
 
