@@ -154,7 +154,6 @@ update_cols <- function(U, A, B, lambda1){
 #' 
 #' @param verbose boolean (default == TRUE). Outputs progress.
 #' 
-#' @export
 #' @return S and L numeric vectors each of length m. Vectors for sample in question
 #' @author Aditya Deshpande
 
