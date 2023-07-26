@@ -177,7 +177,7 @@ dryclean <- R6::R6Class("dryclean",
         if (file.exists(private$pon.path)){
           private$pon = readRDS(private$pon.path)
         } else {
-          message("Warning: PON data file not found or is invalid.")
+          stop("Warning: PON data file not found or is invalid.")
         }
         
       }
@@ -188,8 +188,8 @@ dryclean <- R6::R6Class("dryclean",
     
     prepare_detergent = function(use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected", PAR.file = NULL, balance = TRUE, infer.germline = TRUE, signal.thresh = 0.3, pct.thresh = 0.80, wgs = TRUE, target_resolution = 1000, nochr = TRUE, all.chr = c(as.character(1:22), "X")){
       
-      source("~/git/dryclean/R/rrpca.mod2.R")
-      source("~/git/dryclean/R/helper_functions.R")
+      #source("~/git/dryclean/R/rrpca.mod2.R")
+      #source("~/git/dryclean/R/helper_functions.R")
       
       normal.table.path = private$normal.table.path
       path.to.save = private$pon.path
@@ -229,9 +229,9 @@ dryclean <- R6::R6Class("dryclean",
       }
       
       if (nochr) {
-        template = generate_template_new(cov = gUtils::gr.nochr(readRDS(normal.table[1]$normal_cov)), wgs = wgs, target_resolution = target_resolution, this.field = field, nochr = nochr, all.chr = all.chr)
+        template = generate_template(cov = gUtils::gr.nochr(readRDS(normal.table[1]$normal_cov)), wgs = wgs, target_resolution = target_resolution, this.field = field, nochr = nochr, all.chr = all.chr)
       } else {
-        template = generate_template_new(cov = readRDS(normal.table[1]$normal_cov), wgs = wgs, target_resolution = target_resolution, this.field = field, nochr = nochr, all.chr = all.chr)
+        template = generate_template(cov = readRDS(normal.table[1]$normal_cov), wgs = wgs, target_resolution = target_resolution, this.field = field, nochr = nochr, all.chr = all.chr)
       }
 
       if (choose.randomly){
@@ -441,8 +441,8 @@ dryclean <- R6::R6Class("dryclean",
     
     start_wash_cycle = function(mc.cores = 1, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE, all.chr = c(as.character(1:22), "X")){
       
-      source("~/git/dryclean/R/helper_functions.R")
-      source("~/git/dryclean/R/rrpca.mod2.R")
+      #source("~/git/dryclean/R/helper_functions.R")
+      #source("~/git/dryclean/R/rrpca.mod2.R")
 
       
       cov = readRDS(private$cov.path)

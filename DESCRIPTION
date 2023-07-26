@@ -10,6 +10,15 @@ Remotes:
   github::mskilab/gUtils
 Depends: R (>= 4.0.0),
     data.table (>= 1.10),
+    gUtils,
+    Matrix,
+    rsvd, 
+    GenomicRanges,
+    stats,
+    magrittr,
+    parallel,
+    pbmcapply,
+    MASS
 Imports: 
     gUtils,
     Matrix,

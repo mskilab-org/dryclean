@@ -59,22 +59,11 @@ if (!exists('opt'))
 system(paste('mkdir -p',  opt$outdir))
 
 ##############################
-suppressWarnings(suppressPackageStartupMessages(library(dryclean)))
+#suppressWarnings(suppressPackageStartupMessages(library(dryclean)))
         
         message(dr.str)
         
-        source("R/dryclean.R")
-        
-suppressWarnings(suppressPackageStartupMessages(library(GenomicRanges)))
-suppressWarnings(suppressPackageStartupMessages(library(gUtils)))
-suppressWarnings(suppressPackageStartupMessages(library(Matrix)))
-suppressWarnings(suppressPackageStartupMessages(library(rsvd)))
-suppressWarnings(suppressPackageStartupMessages(library(stats)))
-suppressWarnings(suppressPackageStartupMessages(library(magrittr)))
-suppressWarnings(suppressPackageStartupMessages(library(parallel)))
-suppressWarnings(suppressPackageStartupMessages(library(pbmcapply)))
-suppressWarnings(suppressPackageStartupMessages(library(MASS)))
-
+        suppressWarnings(suppressPackageStartupMessages(devtools::load_all()))
         
         dryclean_object = dryclean$new(
             pon_path = opt$pon,
