@@ -9,15 +9,7 @@ biocViews:
 Remotes:
   github::mskilab/gUtils
 Depends: R (>= 4.0.0),
-    data.table (>= 1.10),
-    gUtils,
-    rsvd,
-    GenomicRanges,
-    stats,
-    magrittr,
-    parallel,
-    pbmcapply,
-    MASS
+    data.table (>= 1.10)
 Imports: 
     gUtils,
     Matrix,
