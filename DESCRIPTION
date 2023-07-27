@@ -1,14 +1,15 @@
 Package: dryclean
 Title: rPCA based method to de-noise genomic coverage data
-Version: 0.0.1
-Authors@R: c(person("Aditya", "Deshpande", role = c("aut", "cre"), email = "asd3002@med.cornell.edu"),
+Version: 0.0.2
+Authors@R: c(person("Aditya", "Deshpande", role = c("aut", "cre"), email = "asd3002@med.cornell.edu"), 
+  person("Sebastian", "Brylka", role = c("aut"), email = "sebastian.brylka@nyulangone.org"),
 	person("Marcin", "Imielinski", role = c("aut"), email = "mai9037@med.cornell.edu"))
 Description: This is rPCA based methd to denoise genomic coverage data.
 biocViews:
 Remotes:
   github::mskilab/gUtils
 Depends: R (>= 4.0.0),
-    data.table (>= 1.10),
+    data.table (>= 1.10)
 Imports: 
     gUtils,
     Matrix,
