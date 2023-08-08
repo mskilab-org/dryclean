@@ -20,6 +20,7 @@
 
 dryclean <- R6::R6Class("dryclean",
     private = list(
+      
     normal.table.path = NULL,
     
     normal.table = NULL,
@@ -30,7 +31,11 @@ dryclean <- R6::R6Class("dryclean",
    
     cov.path = NULL,
     
-    drycleaned.cov = NULL
+    drycleaned.cov = NULL,
+    
+    history = NULL,
+    
+    status = NULL
   ),
   
   public = list(
@@ -46,6 +51,9 @@ dryclean <- R6::R6Class("dryclean",
     #' @param cov_path Character path to GRanges object containig the GC corrected cov data outputed from fragCounter. Needs metadata with header "reads.corrected"
     initialize = function(normal_table_path = NA, pon_path = NA, cov_path) {
       
+      private$history <- data.table(action = character(), date = character())
+      private$history <- rbindlist(list(private$history, data.table(action = "Created dryclean object", date = as.character(Sys.time()))))
+      
       private$normal.table.path = normal_table_path
       private$pon.path = pon_path
       
@@ -55,11 +63,13 @@ dryclean <- R6::R6Class("dryclean",
 
       if(!is.na(normal_table_path)){
         private$normal.table = readRDS(normal_table_path)
+        private$history <- rbindlist(list(private$history, data.table(action = paste("Loaded normal table from",normal_table_path), date = as.character(Sys.time()))))
       }
 
       if(is.na(normal_table_path) & !is.na(pon_path)){
         if (file.exists(private$pon.path)){
           private$pon = readRDS(private$pon.path)
+          private$history <- rbindlist(list(private$history, data.table(action = paste("Loaded PON from", pon_path), date = as.character(Sys.time()))))
         } else {
           stop("Warning: PON data file not found or is invalid.")
         }
@@ -67,6 +77,20 @@ dryclean <- R6::R6Class("dryclean",
       }
 
       private$cov.path = cov_path
+      
+      private$status = "The dryclean class object is created. Recommended next step: "
+      
+      if(!is.na(normal_table_path) & is.na(pon_path)){
+        private$status = paste0(private$status," \n \t Prepare PON aka detergent by using 'prepare_detergent()' method")
+      }
+      
+      if(!is.na(normal_table_path) & !is.na(pon_path)){
+        private$status = paste0(private$status," \n \t Prepare and save PON aka detergent by using 'prepare_detergent(save.pon = TRUE)' method")
+      }
+      
+      if(is.na(normal_table_path) & !is.na(pon_path)){
+        private$status = paste0(private$status," \n \t Apply dryclean to coverage file by using 'start_wash_cycle()' method")
+      }
 
     },
     
@@ -117,9 +141,7 @@ dryclean <- R6::R6Class("dryclean",
     #' @param all.chr list(default = c(as.character(1:22), "X")) list of chromosomes
 
     prepare_detergent = function(use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, save.pon = FALSE, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", field = "reads.corrected", PAR.file = NULL, balance = TRUE, infer.germline = TRUE, signal.thresh = 0.3, pct.thresh = 0.80, wgs = TRUE, target_resolution = 1000, nochr = TRUE, all.chr = c(as.character(1:22), "X")){
-      
-      #source("~/git/dryclean/R/rrpca.mod2.R")
-      #source("~/git/dryclean/R/helper_functions.R")
+
       
       normal.table.path = private$normal.table.path
       path.to.save = private$pon.path
@@ -143,6 +165,7 @@ dryclean <- R6::R6Class("dryclean",
 
       if (verbose){
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
+        private$history <- rbindlist(list(private$history, data.table(action = paste("Started PON preparation"), date = as.character(Sys.time()))))
       }
 
       normal.table = readRDS(normal.table.path)
@@ -360,11 +383,15 @@ dryclean <- R6::R6Class("dryclean",
 
       if (verbose){
         message("Finished making the PON")
+        private$history <- rbindlist(list(private$history, data.table(action = paste("Created new PON from the normal table"), date = as.character(Sys.time()))))
+        private$status <- "PON was created and is ready to use. Recommended next step: \n \t Apply dryclean to coverage file by using 'start_wash_cycle()' method"
       }
 
       if (save.pon){
         message("Saving PON to the provided path")
         saveRDS(detergent, paste0(path.to.save))
+        private$history <- rbindlist(list(private$history, data.table(action = paste("Saved new PON at", private$pon.path), date = as.character(Sys.time()))))
+        private$status <- "PON was created, saved, and is ready to use. Recommended next step: \n \t Apply dryclean to coverage file by using 'start_wash_cycle()' method"
       }
       
     },
@@ -396,12 +423,11 @@ dryclean <- R6::R6Class("dryclean",
     #' @param all.chr list(default = c(as.character(1:22), "X")) list of chromosomes
     
     start_wash_cycle = function(mc.cores = 1, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE, all.chr = c(as.character(1:22), "X")){
-      
-      #source("~/git/dryclean/R/helper_functions.R")
-      #source("~/git/dryclean/R/rrpca.mod2.R")
 
       
       cov = readRDS(private$cov.path)
+      private$history <- rbindlist(list(private$history, data.table(action = paste("Loaded coverage from", private$cov.path), date = as.character(Sys.time()))))
+      
       detergent.pon.path = private$pon.path
       
       if(verbose == TRUE){
@@ -418,11 +444,14 @@ dryclean <- R6::R6Class("dryclean",
       
       if(!is.na(detergent.pon.path) & is.null(private$pon)){
         rpca.1 = readRDS(detergent.pon.path)
+        private$history <- rbindlist(list(private$history, data.table(action = paste("Loaded PON from", detergent.pon.path), date = as.character(Sys.time()))))
       }
       
       if(verbose == TRUE){
         message(paste0("Let's begin, this is whole exome/genome"))
       }
+      
+      private$history <- rbindlist(list(private$history, data.table(action = paste("Started drycleaning coverage file"), date = as.character(Sys.time()))))
       
       if (germline.filter & is.null(rpca.1$inf_germ)){
         stop("If germiline.filter is set to TRUE, pon must have a inf_germ element, see prepare_detergent for details")
@@ -510,6 +539,11 @@ dryclean <- R6::R6Class("dryclean",
         cov = gr.chr(cov)
       }
       private$drycleaned.cov = cov
+      
+      private$history <- rbindlist(list(private$history, data.table(action = paste("Finished drycleaning the coverage file"), date = as.character(Sys.time()))))
+      
+      private$status <- "The coverage file was drycleaned. Recommended next steps: \n \t Access drycleaned coverage by using 'get_drycleaned_cov()' method \n \t Save drycleaned coverage by using 'save_drycleaned coverage(path)' method"
+      
     },
     
     #' @method get_drycleaned_cov() get_drycleaned_cov()
@@ -546,8 +580,51 @@ dryclean <- R6::R6Class("dryclean",
     #' @description Function returns the path to the coverage file
     #'
     #' @return Path to the coverage file
-    get_cov_path = function(){return(private$cov.path)}
+    get_cov_path = function(){return(private$cov.path)},
     
+    #' @method get_history() get_history()
+    #' @description Function returns the history of the dryclean object
+    #'
+    #' @return Prints the history of the dryclean object as data table 
+    get_history = function(){
+      for (i in 1:nrow(private$history)){
+        cat(paste0(private$history$date[i], "\t", private$history$action[i], "\n"))
+      }
+    },
+    
+    #' @method check_status() check_status()
+    #' @description Function returns the current status of the object and recommends next steps
+    #'
+    #' @return Prints the current status and recommends next actions
+    check_status = function(){
+      cat(private$status)
+    },
+
+    #' @method save_drycleaned_cov(path) save_drycleaned_cov(path)
+    #' @description Function saves the drycleaned coverage as rds to the given path
+    #'
+    #' @param path character(default = NA) path to save rds of the coverage file
+    #'
+    #' @return Information about save status
+    
+    save_drycleaned_cov = function(path = NA){
+      if(is.null(private$drycleaned.cov)){
+        stop("The coverage file has not been drycleaned yet. Use 'start_wash_cycle' method")
+      }
+
+      if(is.na(path)){
+        stop("Provide the path to save the drycleaned coverage")
+      }
+
+      saveRDS(private$drycleaned.cov, path)
+
+      if (file.exists(path)) {
+        return("Save successful!")
+      } else {
+        return("Save failed")
+      }
+    }
+
   )
 )
 

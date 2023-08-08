@@ -24,6 +24,9 @@ Aditya Deshpande <asd3002@med.cornell.edu>, Sebastian Brylka <sebastian.brylka@n
 \item \href{#method-dryclean-get_pon_path}{\code{dryclean$get_pon_path()}}
 \item \href{#method-dryclean-get_pon}{\code{dryclean$get_pon()}}
 \item \href{#method-dryclean-get_cov_path}{\code{dryclean$get_cov_path()}}
+\item \href{#method-dryclean-get_history}{\code{dryclean$get_history()}}
+\item \href{#method-dryclean-check_status}{\code{dryclean$check_status()}}
+\item \href{#method-dryclean-save_drycleaned_cov}{\code{dryclean$save_drycleaned_cov()}}
 \item \href{#method-dryclean-clone}{\code{dryclean$clone()}}
 }
 }
@@ -262,6 +265,52 @@ Function returns the path to the coverage file
 
 \subsection{Returns}{
 Path to the coverage file
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-dryclean-get_history"></a>}}
+\if{latex}{\out{\hypertarget{method-dryclean-get_history}{}}}
+\subsection{Method \code{get_history()}}{
+Function returns the history of the dryclean object
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{dryclean$get_history()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Prints the history of the dryclean object as data table
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-dryclean-check_status"></a>}}
+\if{latex}{\out{\hypertarget{method-dryclean-check_status}{}}}
+\subsection{Method \code{check_status()}}{
+Function returns the current status of the object and recommends next steps
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{dryclean$check_status()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Prints the current status and recommends next actions
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-dryclean-save_drycleaned_cov"></a>}}
+\if{latex}{\out{\hypertarget{method-dryclean-save_drycleaned_cov}{}}}
+\subsection{Method \code{save_drycleaned_cov()}}{
+Function saves the drycleaned coverage as rds to the given path
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{dryclean$save_drycleaned_cov(path = NA)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path}}{character(default = NA) path to save rds of the coverage file}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Information about save status
 }
 }
 \if{html}{\out{<hr>}}

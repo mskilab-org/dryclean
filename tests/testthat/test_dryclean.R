@@ -106,6 +106,58 @@ test_that("initialize", {
   ))
 })
 
+test_that("get_normal_table_path", {
+  dryclean_object = dryclean$new(
+    normal_table_path = normal_table.path, 
+    cov_path = sample.1.path)
+  
+  expect_true(identical(dryclean_object$get_normal_table_path(),normal_table.path))
+})
 
 
+test_that("get_normal_table", {
+  dryclean_object = dryclean$new(
+    normal_table_path = normal_table.path, 
+    cov_path = sample.1.path)
+  
+  expect_true(identical(dryclean_object$get_normal_table(),readRDS(normal_table.path)))
+})
 
+
+test_that("get_pon_path", {
+  dryclean_object = dryclean$new(
+    pon_path = detergent.path,
+    cov_path = sample.1.path)
+  
+  expect_true(identical(dryclean_object$get_pon_path(), detergent.path))
+})
+
+test_that("get_history", {
+  dryclean_object = dryclean$new(
+    normal_table_path = normal_table.path,
+    cov_path = sample.1.path)
+  
+  dryclean_object$prepare_detergent()
+  dryclean_object$start_wash_cycle()
+  
+  expect_true(any(grepl("Created dryclean object", capture.output(dryclean_object$get_history()))))
+  expect_true(any(grepl("Loaded normal table from", capture.output(dryclean_object$get_history()))))
+  expect_true(any(grepl("Started PON preparation", capture.output(dryclean_object$get_history()))))
+  expect_true(any(grepl("Loaded coverage", capture.output(dryclean_object$get_history()))))
+  expect_true(any(grepl("Created new PON from the normal table", capture.output(dryclean_object$get_history()))))
+  expect_true(any(grepl("Loaded coverage from", capture.output(dryclean_object$get_history()))))
+  expect_true(any(grepl("Finished drycleaning the coverage file", capture.output(dryclean_object$get_history()))))
+})
+
+
+test_that("save_drycleaned_cov", {
+  dryclean_object = dryclean$new(
+    pon_path = detergent.path,
+    cov_path = sample.1.path)
+  
+  expect_error(dryclean_object$save_drycleaned_cov())
+  
+  dryclean_object$start_wash_cycle()
+  
+  expect_error(dryclean_object$save_drycleaned_cov())
+})
