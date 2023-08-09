@@ -18,7 +18,9 @@ Aditya Deshpande <asd3002@med.cornell.edu>, Sebastian Brylka <sebastian.brylka@n
 \item \href{#method-dryclean-new}{\code{dryclean$new()}}
 \item \href{#method-dryclean-prepare_detergent}{\code{dryclean$prepare_detergent()}}
 \item \href{#method-dryclean-start_wash_cycle}{\code{dryclean$start_wash_cycle()}}
+\item \href{#method-dryclean-cbs}{\code{dryclean$cbs()}}
 \item \href{#method-dryclean-get_drycleaned_cov}{\code{dryclean$get_drycleaned_cov()}}
+\item \href{#method-dryclean-get_cbs_drycleaned_cov}{\code{dryclean$get_cbs_drycleaned_cov()}}
 \item \href{#method-dryclean-get_normal_table_path}{\code{dryclean$get_normal_table_path()}}
 \item \href{#method-dryclean-get_normal_table}{\code{dryclean$get_normal_table()}}
 \item \href{#method-dryclean-get_pon_path}{\code{dryclean$get_pon_path()}}
@@ -27,6 +29,7 @@ Aditya Deshpande <asd3002@med.cornell.edu>, Sebastian Brylka <sebastian.brylka@n
 \item \href{#method-dryclean-get_history}{\code{dryclean$get_history()}}
 \item \href{#method-dryclean-check_status}{\code{dryclean$check_status()}}
 \item \href{#method-dryclean-save_drycleaned_cov}{\code{dryclean$save_drycleaned_cov()}}
+\item \href{#method-dryclean-save_cbs_drycleaned_cov}{\code{dryclean$save_cbs_drycleaned_cov()}}
 \item \href{#method-dryclean-clone}{\code{dryclean$clone()}}
 }
 }
@@ -190,6 +193,19 @@ The function begins the online rPCA process. It is the wrapper that takes in GRa
 
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-dryclean-cbs"></a>}}
+\if{latex}{\out{\hypertarget{method-dryclean-cbs}{}}}
+\subsection{Method \code{cbs()}}{
+Function apples CBS correction to the 'drycleaned' GRanges object
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{dryclean$cbs()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Nothing to return
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-dryclean-get_drycleaned_cov"></a>}}
 \if{latex}{\out{\hypertarget{method-dryclean-get_drycleaned_cov}{}}}
 \subsection{Method \code{get_drycleaned_cov()}}{
@@ -200,6 +216,19 @@ Function returns the 'drycleaned' GRanges object
 
 \subsection{Returns}{
 The 'drycleaned' GRanges object from cov input
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-dryclean-get_cbs_drycleaned_cov"></a>}}
+\if{latex}{\out{\hypertarget{method-dryclean-get_cbs_drycleaned_cov}{}}}
+\subsection{Method \code{get_cbs_drycleaned_cov()}}{
+Function returns the CBS corrected 'drycleaned' GRanges object
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{dryclean$get_cbs_drycleaned_cov()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+The CBS corrected 'drycleaned' GRanges object from cov input
 }
 }
 \if{html}{\out{<hr>}}
@@ -306,6 +335,26 @@ Function saves the drycleaned coverage as rds to the given path
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{path}}{character(default = NA) path to save rds of the coverage file}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Information about save status
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-dryclean-save_cbs_drycleaned_cov"></a>}}
+\if{latex}{\out{\hypertarget{method-dryclean-save_cbs_drycleaned_cov}{}}}
+\subsection{Method \code{save_cbs_drycleaned_cov()}}{
+Function saves the CBS corrected drycleaned coverage as rds to the given path
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{dryclean$save_cbs_drycleaned_cov(path = NA)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path}}{character(default = NA) path to save rds of the cbs coverage file}
 }
 \if{html}{\out{</div>}}
 }

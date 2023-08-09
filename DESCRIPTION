@@ -19,7 +19,8 @@ Imports:
     magrittr,
     parallel,
     pbmcapply,
-    MASS
+    MASS,
+    DNAcopy
 Suggests:
     testthat
 License: GPL-3

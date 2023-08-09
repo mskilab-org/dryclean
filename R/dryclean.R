@@ -3,6 +3,7 @@
 #' @import rsvd
 #' @importFrom MASS ginv
 #' @import gUtils
+#' @import DNAcopy
 
 
 ##############################
@@ -32,6 +33,8 @@ dryclean <- R6::R6Class("dryclean",
     cov.path = NULL,
     
     drycleaned.cov = NULL,
+    
+    cbs.drycleaned.cov = NULL,
     
     history = NULL,
     
@@ -542,8 +545,55 @@ dryclean <- R6::R6Class("dryclean",
       
       private$history <- rbindlist(list(private$history, data.table(action = paste("Finished drycleaning the coverage file"), date = as.character(Sys.time()))))
       
-      private$status <- "The coverage file was drycleaned. Recommended next steps: \n \t Access drycleaned coverage by using 'get_drycleaned_cov()' method \n \t Save drycleaned coverage by using 'save_drycleaned coverage(path)' method"
+      private$status <- "The coverage file was drycleaned. Recommended next steps: \n \t Access drycleaned coverage by using 'get_drycleaned_cov()' method \n \t Save drycleaned coverage by using 'save_drycleaned coverage(path)' method \n \t Apply CBS correction to drycleaned coverage by using 'cbs()' method"
       
+    },
+    
+    #' @method cbs() cbs()
+    #' @description Function apples CBS correction to the 'drycleaned' GRanges object
+    #'
+    #' @return Nothing to return
+    cbs = function(){
+      
+      if(is.null(private$drycleaned.cov)){
+        stop("Error. The coverage has not been drycleaned yet")
+      }
+      
+      cnsignif = 1e-5
+      
+      tcov = private$drycleaned.cov
+      
+      tcov$ratio = values(tcov)[, "foreground"]
+      ss.n = NULL
+      new.sl = seqlengths(tcov)
+      
+      if (any(is.na(new.sl)))
+      {
+        tmp.sl = data.table(sn = as.character(seqnames(tcov)),
+                            end = end(tcov))[ , max(end, na.rm = T), by = sn][ ,  structure(V1, names = sn)]
+        new.sl[is.na(new.sl)] = tmp.sl[is.na(new.sl)]
+        new.sl = new.sl[!is.na(new.sl)]
+      }
+      
+
+      ix = which(!is.na(tcov$ratio))
+      cat('sending ', length(ix), ' segments\n')
+      cna = DNAcopy::CNA(log(tcov$ratio[ix]), as.character(seqnames(tcov))[ix], start(tcov)[ix], data.type = 'logratio')
+      gc()
+      cat('finished making cna\n')
+      seg = DNAcopy::segment(DNAcopy::smooth.CNA(cna), alpha = cnsignif, verbose = T) ## 1e-5!!! TODO URGENT
+      cat('finished segmenting\n')
+      utils::capture.output({seg_dt = print(seg); setDT(seg_dt)}, type = "output", file = "/dev/null") #### KH
+      out = gUtils::seg2gr(seg_dt[!(is.na(seg.mean) | is.na(loc.start) | is.na(loc.end))], new.sl) ## remove seqlengths that have not been segmented #### KH
+      out = gUtils::gr.fix(out, new.sl, drop = T)
+      cat(length(out), ' segments produced\n')
+      names(out) = NULL
+      private$cbs.drycleaned.cov = out
+      gc()
+      
+      private$history <- rbindlist(list(private$history, data.table(action = paste("Applied CBS correction to the drycleaned coverage file"), date = as.character(Sys.time()))))
+    
+      private$status <- "The drycleaned coverage file corrected by CBS. Recommended next step: \n \t Save CBS corrected drycleaned coverage by using 'save_cbs_drycleaned_coverage(path)' method"
     },
     
     #' @method get_drycleaned_cov() get_drycleaned_cov()
@@ -551,6 +601,12 @@ dryclean <- R6::R6Class("dryclean",
     #'
     #' @return The 'drycleaned' GRanges object from cov input
     get_drycleaned_cov = function(){return(private$drycleaned.cov)},
+    
+    #' @method get_cbs_drycleaned_cov() get_cbs_drycleaned_cov()
+    #' @description Function returns the CBS corrected 'drycleaned' GRanges object
+    #'
+    #' @return The CBS corrected 'drycleaned' GRanges object from cov input
+    get_cbs_drycleaned_cov = function(){return(private$cbs.drycleaned.cov)},
     
     #' @method get_normal_table_path() get_normal_table_path()
     #' @description Function returns the path to the normal table
@@ -617,7 +673,44 @@ dryclean <- R6::R6Class("dryclean",
       }
 
       saveRDS(private$drycleaned.cov, path)
-
+      
+      private$history <- rbindlist(list(private$history, data.table(action = paste0("Drycleaned coverage file was saved at ",path), date = as.character(Sys.time()))))
+      
+      private$status <- "The drycleaned coverage file was saved at given path. Recommended next step: \n \t Apply CBS correction to the drycleaned coverage by using 'cbs()' method"
+      
+      if (file.exists(path)) {
+        return("Save successful!")
+      } else {
+        return("Save failed")
+      }
+    },
+    
+    #' @method save_cbs_drycleaned_cov(path) save_cbs_drycleaned_cov(path)
+    #' @description Function saves the CBS corrected drycleaned coverage as rds to the given path
+    #'
+    #' @param path character(default = NA) path to save rds of the cbs coverage file
+    #'
+    #' @return Information about save status
+    
+    save_cbs_drycleaned_cov = function(path = NA){
+      if(is.null(private$drycleaned.cov)){
+        stop("The coverage file has not been drycleaned yet. Use 'start_wash_cycle' method")
+      }
+      
+      if(is.null(private$cbs.drycleaned.cov)){
+        stop("CBS has not been applied to the drycleaned coverage file yet. Use 'cbs' method")
+      }
+      
+      if(is.na(path)){
+        stop("Provide the path to save the cbs drycleaned coverage")
+      }
+      
+      saveRDS(private$cbs.drycleaned.cov, path)
+      
+      private$history <- rbindlist(list(private$history, data.table(action = paste0("CBS corrected drycleaned coverage file was saved at ",path), date = as.character(Sys.time()))))
+      
+      private$status <- "The CBS corrected drycleaned coverage file was saved at given path. Recommended next step: \n \t Access CBS corrected drycleaned coverage by using 'get_cbs_drycleaned_cov()' method"
+      
       if (file.exists(path)) {
         return("Save successful!")
       } else {

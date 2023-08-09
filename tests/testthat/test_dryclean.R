@@ -123,6 +123,14 @@ test_that("get_normal_table", {
   expect_true(identical(dryclean_object$get_normal_table(),readRDS(normal_table.path)))
 })
 
+test_that("get_cov_path", {
+  dryclean_object = dryclean$new(
+    pon_path = detergent.path,
+    cov_path = sample.1.path)
+  
+  expect_true(identical(dryclean_object$get_cov_path(), sample.1.path))
+})
+
 
 test_that("get_pon_path", {
   dryclean_object = dryclean$new(
@@ -160,4 +168,67 @@ test_that("save_drycleaned_cov", {
   dryclean_object$start_wash_cycle()
   
   expect_error(dryclean_object$save_drycleaned_cov())
+})
+
+test_that("save_cbs_drycleaned_cov", {
+  dryclean_object = dryclean$new(
+    pon_path = detergent.path,
+    cov_path = sample.1.path)
+  
+  expect_error(dryclean_object$save_cbs_drycleaned_cov())
+  
+  dryclean_object$start_wash_cycle()
+  
+  expect_error(dryclean_object$save_cbs_drycleaned_cov())
+  
+  dryclean_object$cbs()
+  
+  expect_error(dryclean_object$save_cbs_drycleaned_cov())
+  
+})
+
+
+
+test_that("cbs", {
+  dryclean_object = dryclean$new(
+    pon_path = detergent.path,
+    cov_path = sample.1.path)
+  
+  expect_error(dryclean_object$cbs())
+  
+  dryclean_object$start_wash_cycle()
+  
+  dryclean_object$cbs()  
+  
+  cbs <- dryclean_object$get_cbs_drycleaned_cov()@seqinfo@seqlengths
+
+  expect_true(identical(as.numeric(cbs[1]),101))
+  
+  expect_true(any(grepl("segments produced", capture.output(dryclean_object$cbs()))))
+  expect_true(any(grepl("finished segmenting", capture.output(dryclean_object$cbs()))))
+  
+  expect_true(any(grepl("Applied CBS correction to the drycleaned coverage file", capture.output(dryclean_object$get_history()))))
+  
+  expect_true(any(grepl("The drycleaned coverage file corrected by CBS", capture.output(dryclean_object$check_status()))))
+})
+
+test_that("check_status", {
+  dryclean_object = dryclean$new(
+    pon_path = detergent.path,
+    cov_path = sample.1.path)
+  
+  expect_true(any(grepl("The dryclean class object is created.", capture.output(dryclean_object$check_status()))))
+})
+
+
+test_that("get_cbs_drycleaned_cov", {
+  dryclean_object = dryclean$new(
+    pon_path = detergent.path,
+    cov_path = sample.1.path)
+  
+  dryclean_object$start_wash_cycle()
+  
+  dryclean_object$cbs()  
+  
+  expect_true(identical(as.vector(dryclean_object$get_cbs_drycleaned_cov()@seqnames)[1],"22"))
 })
