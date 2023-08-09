@@ -578,7 +578,9 @@ dryclean <- R6::R6Class("dryclean",
 
       ix = which(!is.na(tcov$ratio))
       cat('sending ', length(ix), ' segments\n')
-      cna = DNAcopy::CNA(log(tcov$ratio[ix]), as.character(seqnames(tcov))[ix], start(tcov)[ix], data.type = 'logratio')
+      suppressWarnings({
+        cna = DNAcopy::CNA(log(tcov$ratio[ix]), as.character(seqnames(tcov))[ix], start(tcov)[ix], data.type = 'logratio')
+      })
       gc()
       cat('finished making cna\n')
       seg = DNAcopy::segment(DNAcopy::smooth.CNA(cna), alpha = cnsignif, verbose = T) ## 1e-5!!! TODO URGENT
