@@ -403,6 +403,8 @@ dryclean <- R6::R6Class("dryclean",
     #' @description Function begins the online rPCA process. Use this function if you performed batch rPCA on samples as whole without dividing into chromosomes. For exomes and whole genomes where number of normal samples are small (<=100). Author: Aditya Deshpande 
     #' @details The function begins the online rPCA process. It is the wrapper that takes in GRanges and outputs GRanges with decomposition 
     #' 
+    #' @param centered boolean (default == TRUE). If a coverage has alreade been centered by by dividing each bin by global mean signal of the sample
+    #' 
     #' @param mc.cores interger (default == 1). Number of cores to use for parallelization.
     #' 
     #' @param detergent.pon.path string. Path to pon/detergent genrated using normal samples.
@@ -425,7 +427,7 @@ dryclean <- R6::R6Class("dryclean",
     #'
     #' @param all.chr list(default = c(as.character(1:22), "X")) list of chromosomes
     
-    start_wash_cycle = function(mc.cores = 1, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE, all.chr = c(as.character(1:22), "X")){
+    start_wash_cycle = function(centered = TRUE, mc.cores = 1, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, chr = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE, all.chr = c(as.character(1:22), "X")){
 
       
       cov = readRDS(private$cov.path)
@@ -473,7 +475,17 @@ dryclean <- R6::R6Class("dryclean",
       }
       local.all.chr = all.chr
       cov = cov %Q% (seqnames %in% local.all.chr)
-      cov = cov[, field] %>% gr2dt() %>% setnames(., field, "signal") %>% dt2gr()
+      cov = cov[, field] %>% gr2dt() %>% setnames(., field, "signal")
+      
+      if(centered == FALSE){
+        cov <- cov %>% 
+          mutate(signal = ifelse(is.na(signal), 0, signal)) %>%
+          mutate(signal = ifelse(is.infinite(signal), NA, signal)) %>%
+          mutate(signal = signal / mean(signal))
+      }
+      
+      cov = cov %>% dt2gr()
+      
       cov = sortSeqlevels(cov)
       cov = sort(cov)
       

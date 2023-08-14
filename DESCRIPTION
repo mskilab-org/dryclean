@@ -20,7 +20,8 @@ Imports:
     parallel,
     pbmcapply,
     MASS,
-    DNAcopy
+    DNAcopy,
+    dplyr
 Suggests:
     testthat
 License: GPL-3

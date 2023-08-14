@@ -147,6 +147,7 @@ read count data and carries rPCA decomposition on the matrix thus created. The n
 Function begins the online rPCA process. Use this function if you performed batch rPCA on samples as whole without dividing into chromosomes. For exomes and whole genomes where number of normal samples are small (<=100). Author: Aditya Deshpande
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{dryclean$start_wash_cycle(
+  centered = TRUE,
   mc.cores = 1,
   verbose = TRUE,
   whole_genome = TRUE,
@@ -163,6 +164,8 @@ Function begins the online rPCA process. Use this function if you performed batc
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
+\item{\code{centered}}{boolean (default == TRUE). If a coverage has alreade been centered by by dividing each bin by global mean signal of the sample}
+
 \item{\code{mc.cores}}{interger (default == 1). Number of cores to use for parallelization.}
 
 \item{\code{verbose}}{boolean (default == TRUE). Outputs progress.}

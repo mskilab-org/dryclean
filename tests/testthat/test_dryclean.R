@@ -3,6 +3,7 @@ context("unit testing dryclean operations")
 
 library(dryclean)
 library(GenomicRanges)
+library(dplyr)
 
 sample.1.path = system.file("extdata", "samp1.rds", package = 'dryclean')
 sample.2.path = system.file("extdata", "samp2.rds", package = 'dryclean')
@@ -231,4 +232,15 @@ test_that("get_cbs_drycleaned_cov", {
   dryclean_object$cbs()  
   
   expect_true(identical(as.vector(dryclean_object$get_cbs_drycleaned_cov()@seqnames)[1],"22"))
+})
+
+
+test_that("centering", {
+  dryclean_object = dryclean$new(
+    pon_path = detergent.path,
+    cov_path = sample.1.path)
+  
+  dryclean_object$start_wash_cycle(centered = FALSE)
+  
+  expect_true(signif(dryclean_object$get_drycleaned_cov()$log.reads[1],3) == -2.57)
 })
