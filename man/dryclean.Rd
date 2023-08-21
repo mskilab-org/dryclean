@@ -21,7 +21,6 @@ Aditya Deshpande <asd3002@med.cornell.edu>, Sebastian Brylka <sebastian.brylka@n
 \item \href{#method-dryclean-cbs}{\code{dryclean$cbs()}}
 \item \href{#method-dryclean-get_drycleaned_cov}{\code{dryclean$get_drycleaned_cov()}}
 \item \href{#method-dryclean-get_cbs_drycleaned_cov}{\code{dryclean$get_cbs_drycleaned_cov()}}
-\item \href{#method-dryclean-get_normal_table_path}{\code{dryclean$get_normal_table_path()}}
 \item \href{#method-dryclean-get_normal_table}{\code{dryclean$get_normal_table()}}
 \item \href{#method-dryclean-get_pon_path}{\code{dryclean$get_pon_path()}}
 \item \href{#method-dryclean-get_pon}{\code{dryclean$get_pon()}}
@@ -39,13 +38,13 @@ Aditya Deshpande <asd3002@med.cornell.edu>, Sebastian Brylka <sebastian.brylka@n
 \subsection{Method \code{new()}}{
 Initialized dryclean object with given paths to normal table, PON and cov
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{dryclean$new(normal_table_path = NA, pon_path = NA, cov_path)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{dryclean$new(normal_vector = c(), pon_path, cov_path)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{normal_table_path}}{Character path to data.table containing two columns "sample" and "normal_cov". See manual for details}
+\item{\code{normal_vector}}{Character vector of paths to normal samples}
 
 \item{\code{pon_path}}{Character path to PON/detergent}
 
@@ -70,7 +69,6 @@ that will be used for online decomposition. Author: Aditya Deshpande
   choose.randomly = FALSE,
   choose.by.clustering = FALSE,
   number.of.samples = 50,
-  save.pon = FALSE,
   verbose = TRUE,
   num.cores = 1,
   tolerance = 1e-04,
@@ -79,7 +77,7 @@ that will be used for online decomposition. Author: Aditya Deshpande
   field = "reads.corrected",
   PAR.file = NULL,
   balance = TRUE,
-  infer.germline = TRUE,
+  infer.germline = FALSE,
   signal.thresh = 0.3,
   pct.thresh = 0.8,
   wgs = TRUE,
@@ -100,8 +98,6 @@ that will be used for online decomposition. Author: Aditya Deshpande
 
 \item{\code{number.of.samples}}{interger (default == 50). If choose.by.clustering == TRUE, this is the number of clusters at which to cut tree.}
 
-\item{\code{save.pon}}{boolean (default == FALSE). If PON needs to be saved.}
-
 \item{\code{verbose}}{boolean (default == TRUE). Outputs progress.}
 
 \item{\code{num.cores}}{interger (default == 1). Number of cores to use for parallelization.}
@@ -118,7 +114,7 @@ that will be used for online decomposition. Author: Aditya Deshpande
 
 \item{\code{balance}}{Boolean (default == TRUE) experimental variable to take into consideration 1 copy of X chr in male sample}
 
-\item{\code{infer.germline}}{use the L matrix to infer germline events.}
+\item{\code{infer.germline}}{boolean (default = FALSE). If use the L matrix to infer germline events.}
 
 \item{\code{signal.thresh}}{numeric (default == 0.5). This is the threshold to be used to identify an amplification (markers with signal intensity > 0.5) or deletions (markers with signal intensity < -0.5) in log space from dryclean outputs.}
 
@@ -157,7 +153,8 @@ Function begins the online rPCA process. Use this function if you performed batc
   germline.file = NA,
   field = "reads.corrected",
   is.human = TRUE,
-  all.chr = c(as.character(1:22), "X")
+  all.chr = c(as.character(1:22), "X"),
+  testing = FALSE
 )}\if{html}{\out{</div>}}
 }
 
@@ -186,6 +183,8 @@ Function begins the online rPCA process. Use this function if you performed batc
 
 \item{\code{all.chr}}{list(default = c(as.character(1:22), "X")) list of chromosomes}
 
+\item{\code{testing}}{boolean(default = FALSE) DO NOT CHANGE}
+
 \item{\code{detergent.pon.path}}{string. Path to pon/detergent genrated using normal samples.}
 }
 \if{html}{\out{</div>}}
@@ -201,9 +200,16 @@ The function begins the online rPCA process. It is the wrapper that takes in GRa
 \subsection{Method \code{cbs()}}{
 Function apples CBS correction to the 'drycleaned' GRanges object
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{dryclean$cbs()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{dryclean$cbs(cnsignif = 1e-05)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{cnsignif}}{int(default = 1e-5) The significance levels for the test to accept change-points.}
+}
+\if{html}{\out{</div>}}
+}
 \subsection{Returns}{
 Nothing to return
 }
@@ -232,19 +238,6 @@ Function returns the CBS corrected 'drycleaned' GRanges object
 
 \subsection{Returns}{
 The CBS corrected 'drycleaned' GRanges object from cov input
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-dryclean-get_normal_table_path"></a>}}
-\if{latex}{\out{\hypertarget{method-dryclean-get_normal_table_path}{}}}
-\subsection{Method \code{get_normal_table_path()}}{
-Function returns the path to the normal table
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{dryclean$get_normal_table_path()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-Path to the normal table
 }
 }
 \if{html}{\out{<hr>}}
