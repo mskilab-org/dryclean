@@ -19,7 +19,6 @@ normal_vector <- readRDS(normal_table.path)$normal_cov
 
 normal_table = data.table(sample = c("samp1", "samp2", "samp3"), normal_cov = c(sample.1.path, sample.2.path, sample.3.path), decomposed_cov = c(decomp.1.path, decomp.2.path, decomp.3.path))
 
-
 detergent.path = system.file("extdata", "detergent.rds", package = 'dryclean')
 
 detergent_test.path = system.file("extdata", "detergent_test.rds", package = 'dryclean')
@@ -29,7 +28,6 @@ U.path = system.file("extdata", "U.rds", package = 'dryclean')
 m.vec.path = system.file("extdata", "m.vec.rds", package = 'dryclean')
 
 ## Tests
-
 
 test_that("prep_cov", {
   field = "reads.corrected"
@@ -59,197 +57,170 @@ test_that("wash_cycle", {
 })
 
 
-test_that("prepare_detergent", {
-  
-  dryclean_object = dryclean$new(
-    pon_path = detergent.path, 
-    cov_path = sample.1.path)
-  expect_error(dryclean_object$prepare_detergent())
+test_that("initialize", {
   
   expect_error(
-    dryclean_object = dryclean$new(
-      normal_vector = normal_vector, 
-      cov_path = sample.1.path))
-
-  dryclean_object = dryclean$new(
+    pon_object = pon$new()
+  )
+  
+  expect_error(
+    pon_object = pon$new(pon_path = "WRONG_PATH")
+  )
+  
+  expect_error(
+    pon_object = pon$new(create_new_pon = TRUE, save_pon = TRUE)
+  )
+  
+  expect_error(
+    normal_samples = c("WRONG_FILE"),
+    pon_object = pon$new(create_new_pon = TRUE, normal_vector = normal_samples)
+  )
+  
+  expect_error(
+    normal_samples = c(),
+    pon_object = pon$new(create_new_pon = TRUE, normal_vector = normal_samples)
+  )
+  
+  pon_object = pon$new(
+    create_new_pon = TRUE, 
+    normal_vector = normal_vector,
+    field = "reads.corrected",
+    tolerance = 0.4, target_resolution = 3
+    )
+  
+  expect_equal(dim(pon_object$get_L())[1], 50)
+  expect_equal(dim(pon_object$get_S())[1], 50)
+  expect_equal(length(pon_object$get_err()),2)
+  expect_equal((pon_object$get_k())[1],2)
+  expect_equal(dim(pon_object$get_U_hat())[1], 50)
+  expect_equal(dim(pon_object$get_V_hat())[1], 2)
+  expect_equal(length(pon_object$get_sigma_hat()), 2)
+  expect_equal(names(pon_object$get_seqlengths()), "22")
+  expect_equal(length(pon_object$get_template()), 50)
+  
+  dryclean_object = dryclean$new(pon = pon_object)
+  expect_true(any(grepl("Created dryclean object", capture.output(dryclean_object$get_history()))))
+  
+  pon_object = pon$new(
+    create_new_pon = TRUE, 
+    normal_vector = normal_vector,
+    save_pon = TRUE,
     pon_path = detergent_test.path,
-    normal_vector = normal_vector, 
-    cov_path = sample.1.path)
-  expect_message(dryclean_object$prepare_detergent())
-  
-  dryclean_object = dryclean$new(
-    normal_vector =  normal_vector,
-    pon_path = detergent_test.path,
-    cov_path = sample.1.path)
-  dryclean_object$prepare_detergent(tolerance = 0.4, target_resolution = 3)
-  all.smp = dryclean_object$get_pon()
-  expect_true(identical(names(all.smp), c("L", "S","err", "k", "U.hat", "V.hat", "sigma.hat", "template")))
-  dryclean_object$prepare_detergent(use.all = FALSE, choose.by.clustering = TRUE, number.of.samples = 3, tolerance = 0.4, target_resolution = 3)
-  hclust.smp = dryclean_object$get_pon()
-  expect_true(identical(names(hclust.smp), c("L", "S","err", "k", "U.hat", "V.hat", "sigma.hat", "template")))
-})
+    field = "reads.corrected",
+    tolerance = 0.4, target_resolution = 3
+  )
 
-
-test_that("start_wash_cycle", {
-  dryclean_object = dryclean$new(
-    pon_path = detergent.path, 
-    cov_path = sample.1.path)
-  
-  dryclean_object$start_wash_cycle(testing = TRUE)
-
-  strt = dryclean_object$get_drycleaned_cov()
-  expect_true(identical(colnames(values(strt)), c("background.log", "foreground.log","input.read.counts", "median.chr", "foreground", "background", "log.reads")))
-})
-
-test_that("initialize", {
-  expect_error(dryclean$new(
-    cov_path = sample.1.path
-  ))
-  
-  expect_error(dryclean$new(
-    pon_path = "WRONG_PATH",
-    cov_path = sample.1.path
-  ))
-  
-  normal_vector_wrong <- c("WRONG_PATH")
-  
-  expect_error(dryclean$new(
-    normal_vector = normal_vector_wrong,
-    pon_path = detergent_test.path,
-    cov_path = sample.1.path
-  ))
+  expect_equal(readRDS(detergent_test.path)$L[1], 0.06105891, tolerance = 0.00001)
   
 })
 
-test_that("get_normal_table", {
-  dryclean_object = dryclean$new(
-    normal_vector = normal_vector, 
-    pon_path = detergent_test.path,
-    cov_path = sample.1.path)
+
+test_that("clean", {
   
-  expect_true(identical(dryclean_object$get_normal_table()$normal_cov,normal_vector))
-  expect_true(identical(dryclean_object$get_normal_table()$sample[3],"sample_3"))
+  pon_object = pon$new(pon_path = detergent.path)
+  
+  dryclean_object <- dryclean$new(pon = pon_object)
+  
+  a <- dryclean_object$clean(cov = sample.1.path, testing = TRUE)
+  
+  expect_identical(names(dryclean_object$get_mismatch())[1], "chr")
+  
+  expect_true(identical(colnames(values(a)), c("background.log", "foreground.log","input.read.counts", "median.chr", "foreground", "background", "log.reads")))
+  
+  expect_equal(a$background.log[1], 0.310781, tolerance = 0.00001)
 })
 
-
-test_that("get_cov_path", {
-  dryclean_object = dryclean$new(
-    pon_path = detergent.path,
-    cov_path = sample.1.path)
-  
-  expect_true(identical(dryclean_object$get_cov_path(), sample.1.path))
-})
-
-
-test_that("get_pon_path", {
-  dryclean_object = dryclean$new(
-    pon_path = detergent.path,
-    cov_path = sample.1.path)
-  
-  expect_true(identical(dryclean_object$get_pon_path(), detergent.path))
-})
 
 test_that("get_history", {
-  dryclean_object = dryclean$new(
-    normal_vector = normal_vector,
-    pon_path = detergent_test.path,
-    cov_path = sample.1.path)
   
-  dryclean_object$prepare_detergent()
-  dryclean_object$start_wash_cycle(testing = TRUE)
+  pon_object = pon$new(
+    create_new_pon = TRUE, 
+    normal_vector = normal_vector,
+    field = "reads.corrected",
+    tolerance = 0.4, target_resolution = 3
+  )
+  
+  dryclean_object <- dryclean$new(pon = pon_object)
+  
+  a <- dryclean_object$clean(cov = sample.1.path, testing = TRUE)
   
   expect_true(any(grepl("Created dryclean object", capture.output(dryclean_object$get_history()))))
-  expect_true(any(grepl("Loaded normal vector", capture.output(dryclean_object$get_history()))))
-  expect_true(any(grepl("Started PON preparation", capture.output(dryclean_object$get_history()))))
-  expect_true(any(grepl("Loaded coverage", capture.output(dryclean_object$get_history()))))
-  expect_true(any(grepl("Saved new PON", capture.output(dryclean_object$get_history()))))
+  expect_true(any(grepl("Loaded PON", capture.output(dryclean_object$get_history()))))
   expect_true(any(grepl("Loaded coverage from", capture.output(dryclean_object$get_history()))))
+  expect_true(any(grepl("Started drycleaning the coverage file", capture.output(dryclean_object$get_history()))))
   expect_true(any(grepl("Finished drycleaning the coverage file", capture.output(dryclean_object$get_history()))))
+  
+  expect_true(any(grepl("Created pon object", capture.output(pon_object$get_history()))))
+  expect_true(any(grepl("Loaded normal vector", capture.output(pon_object$get_history()))))
+  expect_true(any(grepl("Started PON preparation", capture.output(pon_object$get_history()))))
+  expect_true(any(grepl("Created new PON from the normal samples", capture.output(pon_object$get_history()))))
 })
-
-
-test_that("save_drycleaned_cov", {
-  dryclean_object = dryclean$new(
-    pon_path = detergent.path,
-    cov_path = sample.1.path)
-  
-  expect_error(dryclean_object$save_drycleaned_cov())
-  
-  dryclean_object$start_wash_cycle(testing = TRUE)
-  
-  expect_error(dryclean_object$save_drycleaned_cov())
-})
-
-test_that("save_cbs_drycleaned_cov", {
-  dryclean_object = dryclean$new(
-    pon_path = detergent.path,
-    cov_path = sample.1.path)
-  
-  expect_error(dryclean_object$save_cbs_drycleaned_cov())
-  
-  dryclean_object$start_wash_cycle(testing = TRUE)
-  
-  expect_error(dryclean_object$save_cbs_drycleaned_cov())
-  
-  dryclean_object$cbs()
-  
-  expect_error(dryclean_object$save_cbs_drycleaned_cov())
-  
-})
-
 
 
 test_that("cbs", {
-  dryclean_object = dryclean$new(
-    pon_path = detergent.path,
-    cov_path = sample.1.path)
   
-  expect_error(dryclean_object$cbs())
+  pon_object = pon$new(pon_path = detergent.path)
   
-  dryclean_object$start_wash_cycle(testing = TRUE)
+  dryclean_object <- dryclean$new(pon = pon_object)
   
-  dryclean_object$cbs()  
+  a <- dryclean_object$clean(cov = sample.1.path, testing = TRUE, cbs = TRUE)
   
-  cbs <- dryclean_object$get_cbs_drycleaned_cov()@seqinfo@seqlengths
+  cbs <- a@seqinfo@seqlengths
 
   expect_true(identical(as.numeric(cbs[1]),101))
   
-  expect_true(any(grepl("segments produced", capture.output(dryclean_object$cbs()))))
-  expect_true(any(grepl("finished segmenting", capture.output(dryclean_object$cbs()))))
-  
   expect_true(any(grepl("Applied CBS correction to the drycleaned coverage file", capture.output(dryclean_object$get_history()))))
   
-  expect_true(any(grepl("The drycleaned coverage file corrected by CBS", capture.output(dryclean_object$check_status()))))
 })
 
-test_that("check_status", {
-  dryclean_object = dryclean$new(
-    pon_path = detergent.path,
-    cov_path = sample.1.path)
-  
-  expect_true(any(grepl("The dryclean class object is created.", capture.output(dryclean_object$check_status()))))
-})
-
-
-test_that("get_cbs_drycleaned_cov", {
-  dryclean_object = dryclean$new(
-    pon_path = detergent.path,
-    cov_path = sample.1.path)
-  
-  dryclean_object$start_wash_cycle(testing = TRUE)
-  
-  dryclean_object$cbs()  
-  
-  expect_true(identical(as.vector(dryclean_object$get_cbs_drycleaned_cov()@seqnames)[1],"22"))
-})
 
 
 test_that("centering", {
-  dryclean_object = dryclean$new(
-    pon_path = detergent.path,
-    cov_path = sample.1.path)
+  pon_object = pon$new(pon_path = detergent.path)
   
-  dryclean_object$start_wash_cycle(testing = TRUE, centered = FALSE)
+  dryclean_object <- dryclean$new(pon = pon_object)
   
-  expect_true(signif(dryclean_object$get_drycleaned_cov()$log.reads[1],3) == -2.57)
+  a <- dryclean_object$clean(cov = sample.1.path, testing = TRUE, centered = FALSE)
+  
+  expect_equal(a$background.log[1], 0.0507715, tolerance = 0.00001) 
+  
+})
+
+test_that("clustering", {
+  expect_error(
+    pon_object = pon$new(
+      create_new_pon = TRUE, 
+      normal_vector = normal_vector,
+      field = "reads.corrected",
+      tolerance = 0.4, target_resolution = 3,
+      choose.by.clustering = TRUE,
+      number.of.samples = 2
+    )
+  )
+  
+  pon_object = pon$new(
+    create_new_pon = TRUE, 
+    normal_vector = normal_vector,
+    field = "reads.corrected",
+    tolerance = 0.4, target_resolution = 3,
+    use.all = FALSE,
+    choose.by.clustering = TRUE,
+    number.of.samples = 2
+  )
+
+  expect_equal(pon_object$get_L()[5], 0.004731082, tolerance = 0.00001) 
+  
+})
+
+test_that("infer.germline", {
+
+  pon_object = pon$new(
+    create_new_pon = TRUE, 
+    normal_vector = normal_vector,
+    field = "reads.corrected",
+    tolerance = 0.4, target_resolution = 3,
+    infer.germline = TRUE
+  )
+  
+  expect_equal(length(pon_object$get_inf_germ()), 50) 
 })
