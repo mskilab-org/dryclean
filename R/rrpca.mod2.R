@@ -92,11 +92,11 @@
 #' image(matrix(out$L[,10], ncol=100, nrow=100)) # seperated background
 #' image(matrix(out$S[,10], ncol=100, nrow=100)) #seperated foreground
 #'
-#' @export
+
 
 rrpca.mod <- function(A, lambda=NULL, maxiter=50, tol=1.0e-3, p=10, q=2, trace=FALSE, rand=TRUE) UseMethod("rrpca.mod")
 
-#' @S3method common default
+#' @method common default
 
 rrpca.mod.default <- function(A, lambda=NULL, maxiter=50, tol=1.0e-3, p=10, q=2, trace=FALSE, rand=TRUE, ...) {
     ##*************************************************************************
