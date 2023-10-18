@@ -34,7 +34,7 @@ if (!exists('opt'))
             make_option(c("-l", "--blacklist_path"), default = NA, type = "character", help = "If use.blacklist == TRUE, path a GRange marking if each marker is set to be excluded or not"),
             make_option(c("-g", "--germline.filter"), default = FALSE, type = "logical", help = "If PON based germline filter is to be used for removing some common germline events, If set to TRUE, give path to germline annotated file"),
             make_option(c("-f", "--germline.file"), default = NA, type = "character", help = "Path to file annotated with germline calls, if germline.filter == TRUE"),
-            make_option(c("-h", "--human"), type = "logical", default = TRUE, help = "Specify if the samples under consideration are human"),
+            make_option(c("-m", "--human"), type = "logical", default = TRUE, help = "Specify if the samples under consideration are human"),
             make_option(c("-F", "--field"), type = "character", default = 'reads.corrected', help = "Field name in GRanges metadata to use for drycleaning"),
             make_option(c("-C", "--all.chr"), default = c(as.character(1:22), "X"), type = "character", help = "list of chromosomes to dryclean"),
             make_option(c("-B", "--build"), type = "character", default = 'hg19', help = "hg19/hg38 build for human samples"),
