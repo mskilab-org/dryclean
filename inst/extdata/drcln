@@ -38,7 +38,8 @@ if (!exists('opt'))
             make_option(c("-F", "--field"), type = "character", default = 'reads.corrected', help = "Field name in GRanges metadata to use for drycleaning"),
             make_option(c("-C", "--all.chr"), default = c(as.character(1:22), "X"), type = "character", help = "list of chromosomes to dryclean"),
             make_option(c("-B", "--build"), type = "character", default = 'hg19', help = "hg19/hg38 build for human samples"),
-            make_option(c("-o", "--outdir"), type = "character", default = './', help = "output directory")
+            make_option(c("-o", "--outdir"), type = "character", default = './', help = "output directory"),
+            make_option(c("-T", "--testing"), type = "character", default = FALSE, help = "DO NOT CHANGE")
 
         )
 
@@ -87,7 +88,8 @@ system(paste('mkdir -p',  opt$outdir))
             germline.file = opt$germline.file, 
             field = opt$field, 
             is.human = opt$human, 
-            all.chr = opt$all.chr
+            all.chr = opt$all.chr,
+            testing = opt$testing
         )
         
         
