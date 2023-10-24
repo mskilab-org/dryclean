@@ -405,15 +405,18 @@ For 'dryclean' to work correctly, the lengths of each sequence on each chromosom
 
 ###  <font color=black> 3. Running `dryclean` on tumor sample from command line</font>
 
+Dryclean CLI offers two modes of operation: PON generation and normalization using an existing PON.
+
+Mode 1 (Default): Coverage Normalization with an existing PON. To select this mode, set <code>--mode 'coverage'</code>. In this mode, Dryclean employs an existing PON specified by <code>--pon</code> to normalize the GRanges coverage provided with <code>--input</code>. The normalized coverage is saved as GRanges in the <code>--outdir</code> directory (default = './').
+
+Example (Note: <code>--testing TRUE</code> only for example purposes; typically, you would use the default value):
+
+
 ```R
 ./drcln --input inst/extdata/samp1.rds --pon inst/extdata/detergent.rds --testing TRUE
-
 ```
 
 ```R
-Rprofile Loading
-Rprofile Finished Loading
-
 
 ▓█████▄   ██▀███  ██   ██▓ ▄████▄   ██▓    ▓█████ ▄▄▄       ███▄    █
  ██▀ ██▌ ▓██   ██  ██  ██  ██▀ ▀█  ▓██▒    ▓█   ▀ ████▄     ██ ▀█   █
@@ -435,6 +438,7 @@ PON loaded
 Loading coverage
 Loading PON a.k.a detergent
 Let's begin, this is whole exome/genome
+Centering the sample
 Initializing wash cycle
 Using the detergent provided to start washing
 lambdas calculated
@@ -444,60 +448,106 @@ Calculating b
 Combining matrices with gRanges
 Giddy Up!
 
+```
+
+Mode 2: PON Generation. To select this mode, set <code>--mode 'pon'</code>. In this mode, a new Panel of Normals (PON) is generated using a vector of normal samples saved as .rds, specified with <code>--normal_vector</code> flag. The newly created PON is then saved in the <code>--outdir</code> directory (default = './'). 
+
+Example: 
+
+```R
+./drcln --mode "pon" --normal_vector inst/extdata/normal_vector.rds
 
 ```
 
-All the options and usage is as follows
+```R
+
+▓█████▄   ██▀███  ██   ██▓ ▄████▄   ██▓    ▓█████ ▄▄▄       ███▄    █
+ ██▀ ██▌ ▓██   ██  ██  ██  ██▀ ▀█  ▓██▒    ▓█   ▀ ████▄     ██ ▀█   █
+░██   █▌ ▓██ ░▄█    ██ ██  ▓█    ▄  ██░    ░███   ██  ▀█▄   ██  ▀█ ██▒
+░▓█▄   ▌ ▒██▀▀█▄   ░ ▐██▓ ▒▓▓▄ ▄██▒ ██░    ░▓█  ▄ ██▄▄▄▄█   ██▒  ▐▌██▒
+░▒████▓  ░██▓  ██  ░ ██▒    ▓███▀ ░░█████ ▒█████▒ █     █▒ ██░   ▓██░
+ ▒ ▓  ▒  ░  ▓ ░▒▓░  ██    ░ ░▒ ▒  ░░ ▒░▓  ░░░ ▒░ ░▒▒   ▓▒█░░ ▒░   ▒ ▒
+ ░ ▒  ▒    ░▒ ░  ░  ░░▒░   ░  ▒   ░ ░ ▒  ░ ░ ░  ░ ▒   ▒▒ ░░ ░░   ░ ▒░
+ ░ ░  ░    ░░   ░   ░  ░░  ░          ░ ░  ░    ░    ░   ▒      ░   ░ ░
+   ░        ░     ░ ░     ░ ░          ░  ░   ░  ░     ░  ░     ░   ░
+ ░               ░ ░     ░       ░    ░     ░     ░      ░     ░ 
+
+
+(Let's dryclean the genomes!)
+
+ℹ Loading dryclean
+Loading PON...
+WARNING: New PON will be generated and saved at ./pon.rds
+
+Giving you some time to think...
+
+Starting the preparation of Panel of Normal samples a.k.a detergent
+3 samples available
+Using all samples
+PAR file not provided, using hg19 default. If this is not the correct build, please provide a GRanges object delineating for corresponding build
+PAR read
+Checking for existence of files
+3 files present
+Starting decomposition
+This is version 2
+Finished making the PON
+Finished saving the PON to the provided path
+PON loaded
+Giddy Up!
+
+```
+
+All CLI options:
 
 ```R
 ./drcln -h
+
 ```
 
 ```R
-Rprofile Loading
-Rprofile Finished Loading
-Usage: ./drcln [options]
-
 
 Options:
+	--mode=MODE
+		Mode of operation: 'pon' or 'coverage'. Set to 'pon' for PON generation and 'coverage' for normalizing a sample using existing PON
+
 	-p PON, --pon=PON
-		Path to Panel Of Normal (PON) on which batch rPCA have been run. Within the file should be L, S matrices, estimated rank for burnin samples and svd decomposition matrices for the same
+		path to the existing Panel Of Normal (PON) saved as .rds
 
 	-i INPUT, --input=INPUT
-		Path to cov.rds file, fragCounter output for sample under consideration
+		path to the coverage file in GRanges format saved as .rds
 
 	-t CENTERED, --centered=CENTERED
 		are the samples centered
 
 	-s CBS, --cbs=CBS
-		if perform cbs on the drycleaned coverage
+		whether to perform cbs on the drycleaned coverage
 
 	-n CNSIGNIF, --cnsignif=CNSIGNIF
 		the significance levels for the test to accept change-points in cbs
 
 	-c CORES, --cores=CORES
-		How many cores to use
+		number of cores to use
 
 	-w WHOLEGENOME, --wholeGenome=WHOLEGENOME
-		If TRUE then it will process all chromosomes and parallelize it
+		whether whole genome is being used
 
 	-b BLACKLIST, --blacklist=BLACKLIST
-		if there are blacklisted makers
+		whether there are blacklisted makers
 
 	-l BLACKLIST_PATH, --blacklist_path=BLACKLIST_PATH
-		If use.blacklist == TRUE, path a GRange marking if each marker is set to be excluded or not
+		if --blacklist == TRUE, path to a GRanges object marking if each marker is set to be excluded or not
 
 	-g GERMLINE.FILTER, --germline.filter=GERMLINE.FILTER
-		If PON based germline filter is to be used for removing some common germline events, If set to TRUE, give path to germline annotated file
+		if PON based germline filter is to be used for removing some common germline events, if set to TRUE, give path to germline annotated file
 
 	-f GERMLINE.FILE, --germline.file=GERMLINE.FILE
-		Path to file annotated with germline calls, if germline.filter == TRUE
+		path to file annotated with germline calls, if germline.filter == TRUE
 
 	-m HUMAN, --human=HUMAN
-		Specify if the samples under consideration are human
+		whther the samples under consideration are human
 
 	-F FIELD, --field=FIELD
-		Field name in GRanges metadata to use for drycleaning
+		field name in GRanges metadata to use for drycleaning
 
 	-C ALL.CHR, --all.chr=ALL.CHR
 		list of chromosomes to dryclean
@@ -505,13 +555,22 @@ Options:
 	-B BUILD, --build=BUILD
 		hg19/hg38 build for human samples
 
-	-o OUTDIR, --outdir=OUTDIR
-		output directory
-		
 	-T TESTING, --testing=TESTING
 		DO NOT CHANGE
 
+	--normal_vector=NORMAL_VECTOR
+		if mode = 'pon', path to a vector containing normal coverages in GRanges format saved as .rds
+
+	--field_pon=FIELD_PON
+		field name in GRanges metadata of normal samples to use for pon generation
+
+	-o OUTDIR, --outdir=OUTDIR
+		output directory
+
+	-h, --help
+		show this help message and exit
 ```
+
 
 ## <font color=black> Panel of Normal for 1kb WGS (hg19) </font>
 
