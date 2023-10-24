@@ -277,7 +277,7 @@ dryclean_object <- dryclean$new(pon = pon_object)
 
 ```
 
-Once the dryclean object is initialized, use the <code>clean</code> function to normalize the coverage. The function takes a path to the coverage as a parameter (<code>testing=TRUE</code> just for the sake of example, normally leave it as default ).
+After initializing the dryclean object, use the <code>clean</code> function to normalize the coverage with the path to the coverage data as the required <code>cov</code> parameter. For the sake of example, we set the parameter <code>testing=TRUE</code> but typically, you would leave it at its default value.
 
 
 ```R
@@ -450,7 +450,7 @@ Giddy Up!
 All the options and usage is as follows
 
 ```R
-./drcln
+./drcln -h
 ```
 
 ```R

@@ -1,1 +1,0 @@
---pon inst/extdata/detergent.rds --input inst/extdata/samp1.rds --centered TRUE --cbs FALSE --cnsignif 0 --cores 10 --wholeGenome TRUE --blacklist FALSE --blacklist_path NA --germline.filter FALSE --germline.file NA --human TRUE --field reads.corrected --all.chr 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X --build hg19 --outdir ./ --testing TRUE

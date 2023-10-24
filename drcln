@@ -23,9 +23,9 @@ dr.str = "
 if (!exists('opt'))
     {
         option_list = list(
-            make_option(c("-p", "--pon"), type = "character", help = "Path to Panel Of Normal (PON) on which batch rPCA have been run. Within the file should be L, S matrices, estimated rank for burnin samples and svd decomposition matrices for the same"),
+            make_option(c("-p", "--pon"), type = "character", default = NULL, help = "Path to the existing Panel Of Normal (PON) on which batch rPCA have been run. Within the file should be L, S matrices, estimated rank for burnin samples and svd decomposition matrices for the same"),
             make_option(c("-i", "--input"), type = "character", help = "Path to cov.rds file, fragCounter output for sample under consideration"),
-            make_option(c("-t", "--centered"), type = "logical", default = TRUE, help = "are the samples centered"),
+            make_option(c("-t", "--centered"), type = "logical", default = FALSE, help = "are the samples centered"),
             make_option(c("-s", "--cbs"), type = "logical", default = FALSE, help = "if perform cbs on the drycleaned coverage"),
             make_option(c("-n", "--cnsignif"), type = "integer", default = 1e-5, help = "the significance levels for the test to accept change-points in cbs"),
             make_option(c("-c", "--cores"), type = "integer", default = 10,  help = "How many cores to use"),
@@ -36,17 +36,21 @@ if (!exists('opt'))
             make_option(c("-f", "--germline.file"), default = NA, type = "character", help = "Path to file annotated with germline calls, if germline.filter == TRUE"),
             make_option(c("-m", "--human"), type = "logical", default = TRUE, help = "Specify if the samples under consideration are human"),
             make_option(c("-F", "--field"), type = "character", default = 'reads.corrected', help = "Field name in GRanges metadata to use for drycleaning"),
-            make_option(c("-C", "--all.chr"), default = c(as.character(1:22), "X"), type = "character", help = "list of chromosomes to dryclean"),
+            make_option(c("-C", "--all.chr"), default = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, X", type = "character", help = "list of chromosomes to dryclean"),
             make_option(c("-B", "--build"), type = "character", default = 'hg19', help = "hg19/hg38 build for human samples"),
             make_option(c("-o", "--outdir"), type = "character", default = './', help = "output directory"),
-            make_option(c("-T", "--testing"), type = "character", default = FALSE, help = "DO NOT CHANGE")
+            make_option(c("-T", "--testing"), type = "character", default = FALSE, help = "DO NOT CHANGE"),
+            make_option(c("-h", "--help"), action="store_true", default=FALSE, help="Show this help message and exit"),
+            make_option(c("--create_new_pon"), type = "logical", default = FALSE, help = "Whether to create a new PON from normal samples"),
+            make_option(c("--normal_vector"), type = "character", default = NULL, help = "if create_new_pon = TRUE, vector containing normal coverages. See manual for details"),
+            make_option(c("--pon_field"), type = "character", default = 'reads.corrected', help = "Field to use for PON generation processing")
 
         )
 
         parseobj = OptionParser(option_list=option_list, add_help_option=FALSE)
         opt = parse_args(parseobj)
 
-        if ((is.null(opt$input)) | is.null(opt$pon))
+        if ((is.null(opt$input)) | (is.null(opt$pon) & opt$create_new_pon == FALSE))
             stop(print_help(parseobj))
 
         options(error=function()traceback(2))
@@ -68,10 +72,24 @@ system(paste('mkdir -p',  opt$outdir))
         message(dr.str)
         
         suppressWarnings(suppressPackageStartupMessages(devtools::load_all()))
+        suppressWarnings(suppressPackageStartupMessages(library(dplyr)))
         suppressWarnings(suppressPackageStartupMessages(library(GenomicRanges)))
         
-        pon_object <- pon$new(pon_path = opt$pon, build = opt$build)
-        
+        if(opt$create_new_pon == TRUE){
+            normal.vector <- readRDS(opt$normal_vector)
+            pon_object <- pon$new(
+                normal_vector = normal.vector,
+                pon_path = paste0(opt$outdir, 'pon.rds'),
+                create_new_pon = TRUE, 
+                save_pon = TRUE,
+                field = opt$pon_field, 
+                build = opt$build,
+                num.cores = opt$cores
+            )
+        }else{
+            pon_object <- pon$new(pon_path = opt$pon, build = opt$build)
+        }
+      
         dryclean_object <- dryclean$new(pon = pon_object)
         
         a <- dryclean_object$clean(
@@ -88,7 +106,7 @@ system(paste('mkdir -p',  opt$outdir))
             germline.file = opt$germline.file, 
             field = opt$field, 
             is.human = opt$human, 
-            all.chr = opt$all.chr,
+            all.chr = strsplit(opt$all.chr,", ")[[1]],
             testing = opt$testing
         )
         

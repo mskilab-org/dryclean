@@ -36,10 +36,11 @@ if (!exists('opt'))
             make_option(c("-f", "--germline.file"), default = NA, type = "character", help = "Path to file annotated with germline calls, if germline.filter == TRUE"),
             make_option(c("-m", "--human"), type = "logical", default = TRUE, help = "Specify if the samples under consideration are human"),
             make_option(c("-F", "--field"), type = "character", default = 'reads.corrected', help = "Field name in GRanges metadata to use for drycleaning"),
-            make_option(c("-C", "--all.chr"), default = c(as.character(1:22), "X"), type = "character", help = "list of chromosomes to dryclean"),
+            make_option(c("-C", "--all.chr"), default = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, X", type = "character", help = "list of chromosomes to dryclean"),
             make_option(c("-B", "--build"), type = "character", default = 'hg19', help = "hg19/hg38 build for human samples"),
             make_option(c("-o", "--outdir"), type = "character", default = './', help = "output directory"),
-            make_option(c("-T", "--testing"), type = "character", default = FALSE, help = "DO NOT CHANGE")
+            make_option(c("-T", "--testing"), type = "character", default = FALSE, help = "DO NOT CHANGE"),
+            make_option(c("-h", "--help"), action="store_true", default=FALSE, help="Show this help message and exit")
 
         )
 
@@ -88,10 +89,9 @@ system(paste('mkdir -p',  opt$outdir))
             germline.file = opt$germline.file, 
             field = opt$field, 
             is.human = opt$human, 
-            all.chr = opt$all.chr,
+            all.chr = strsplit(opt$all.chr,", ")[[1]],
             testing = opt$testing
         )
-        
         
         this.out = a
         

@@ -13,11 +13,11 @@ decomp.1.path = system.file("extdata", "decomp1.rds", package = 'dryclean')
 decomp.2.path = system.file("extdata", "decomp2.rds", package = 'dryclean')
 decomp.3.path = system.file("extdata", "decomp3.rds", package = 'dryclean')
 
-#normal_table.path  = system.file("extdata", "normal_table.rds", package = 'dryclean')
+normal_table.path  = system.file("extdata", "normal_table.rds", package = 'dryclean')
 
-#normal_vector <- readRDS(normal_table.path)$normal_cov
+normal_vector <- readRDS(normal_table.path)$normal_cov
 
-normal_vector  = system.file("extdata", "normal_vector.rds", package = 'dryclean')
+# normal_vector  = system.file("extdata", "normal_vector.rds", package = 'dryclean')
 
 normal_table = data.table(sample = c("samp1", "samp2", "samp3"), normal_cov = c(sample.1.path, sample.2.path, sample.3.path), decomposed_cov = c(decomp.1.path, decomp.2.path, decomp.3.path))
 
@@ -129,7 +129,7 @@ test_that("clean", {
   
   expect_true(identical(colnames(values(a)), c("background.log", "foreground.log","input.read.counts", "median.chr", "foreground", "background", "log.reads")))
   
-  expect_equal(a$background.log[1], 0.310781, tolerance = 0.00001)
+  expect_equal(a$background.log[1], 0.05077155, tolerance = 0.00001)
 })
 
 

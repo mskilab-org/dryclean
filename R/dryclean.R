@@ -241,10 +241,7 @@ dryclean <- R6::R6Class("dryclean",
       #dt = data.table(cov.dc = cov, cov.dc.cbs = NULL)
       
       private$history <- rbindlist(list(private$history, data.table(action = paste("Finished drycleaning the coverage file"), date = as.character(Sys.time()))))
-      
-      if(cbs == FALSE){
-        return(cov)
-      }
+    
 
       if(cbs == TRUE){
         
@@ -285,10 +282,13 @@ dryclean <- R6::R6Class("dryclean",
         
         private$history <- rbindlist(list(private$history, data.table(action = paste("Applied CBS correction to the drycleaned coverage file"), date = as.character(Sys.time()))))
         
-        return(out)
+        saveRDS(out, "cbs_output.rds")
+        
+        private$history <- rbindlist(list(private$history, data.table(action = paste("Saved CBS output in current directory as cbs_output.rds"), date = as.character(Sys.time()))))
+        
       }
         
-      #return(dt)
+      return(cov)
     },
 
      
