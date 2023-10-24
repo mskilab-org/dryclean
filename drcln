@@ -41,17 +41,30 @@ if (!exists('opt'))
             make_option(c("-o", "--outdir"), type = "character", default = './', help = "output directory"),
             make_option(c("-T", "--testing"), type = "character", default = FALSE, help = "DO NOT CHANGE"),
             make_option(c("-h", "--help"), action="store_true", default=FALSE, help="Show this help message and exit"),
-            make_option(c("--create_new_pon"), type = "logical", default = FALSE, help = "Whether to create a new PON from normal samples"),
+            make_option(c("--mode"), type = "character", default = "coverage", help = "Mode of operation: 'pon' or 'coverage'"),
             make_option(c("--normal_vector"), type = "character", default = NULL, help = "if create_new_pon = TRUE, vector containing normal coverages. See manual for details"),
-            make_option(c("--pon_field"), type = "character", default = 'reads.corrected', help = "Field to use for PON generation processing")
+            make_option(c("--field_pon"), type = "character", default = 'reads.corrected', help = "Field to use for PON generation processing")
 
         )
 
         parseobj = OptionParser(option_list=option_list, add_help_option=FALSE)
         opt = parse_args(parseobj)
-
-        if ((is.null(opt$input)) | (is.null(opt$pon) & opt$create_new_pon == FALSE))
-            stop(print_help(parseobj))
+        
+        if(opt$mode != "coverage" & opt$mode != "pon"){
+          stop("Invalid mode: choose 'pon' or 'coverage'")
+        }
+        
+        if(opt$mode == "pon" & is.null(opt$normal_vector)){
+          stop("Use normal_vector to generate a new PON")
+        }
+        
+        if(opt$mode == "coverage" & is.null(opt$input)){
+          stop("Missing coverage to normalize. Run ./drcln -h for help")
+        }
+        
+        if(opt$mode == "coverage" & is.null(opt$pon)){
+          stop("Missing PON. Run ./drcln -h for help")
+        }
 
         options(error=function()traceback(2))
 
@@ -59,9 +72,6 @@ if (!exists('opt'))
         writeLines(paste(paste('--', names(opt), ' ', sapply(opt, function(x) paste(x, collapse = ',')), sep = '', collapse = ' '), sep = ''), paste(opt$outdir, 'cmd.args', sep = '/'))
         saveRDS(opt, paste(opt$outdir, 'cmd.args.rds', sep = '/'))
     }
-
-
-
 
 
 system(paste('mkdir -p',  opt$outdir))
@@ -75,7 +85,7 @@ system(paste('mkdir -p',  opt$outdir))
         suppressWarnings(suppressPackageStartupMessages(library(dplyr)))
         suppressWarnings(suppressPackageStartupMessages(library(GenomicRanges)))
         
-        if(opt$create_new_pon == TRUE){
+        if(opt$mode == "pon"){
             normal.vector <- readRDS(opt$normal_vector)
             pon_object <- pon$new(
                 normal_vector = normal.vector,
@@ -86,11 +96,12 @@ system(paste('mkdir -p',  opt$outdir))
                 build = opt$build,
                 num.cores = opt$cores
             )
-        }else{
-            pon_object <- pon$new(pon_path = opt$pon, build = opt$build)
         }
-      
-        dryclean_object <- dryclean$new(pon = pon_object)
+        
+        if(opt$mode == "coverage"){
+            pon_object <- pon$new(pon_path = opt$pon, build = opt$build)
+            
+                    dryclean_object <- dryclean$new(pon = pon_object)
         
         a <- dryclean_object$clean(
             cov = opt$input, 
@@ -108,11 +119,13 @@ system(paste('mkdir -p',  opt$outdir))
             is.human = opt$human, 
             all.chr = strsplit(opt$all.chr,", ")[[1]],
             testing = opt$testing
-        )
+          )
+          
+          this.out = a
         
-        this.out = a
-        
-        saveRDS(this.out, paste0(opt$outdir, 'drycleaned.cov.rds'))
-        
+          saveRDS(this.out, paste0(opt$outdir, 'drycleaned.cov.rds'))
+          
+        }
+
         message('Giddy Up!') 
 
