@@ -49,39 +49,39 @@ dryclean <- R6::R6Class("dryclean",
     #' @description Function begins the online rPCA process. Use this function if you performed batch rPCA on samples as whole without dividing into chromosomes. For exomes and whole genomes where number of normal samples are small (<=100). Author: Aditya Deshpande 
     #' @details The function begins the online rPCA process. It is the wrapper that takes in GRanges and outputs GRanges with decomposition 
     #' 
-    #' @param cov path to the granges coverage file to be drycleaned
+    #' @param cov character path to the granges coverage file to be drycleaned
     #'
-    #' @param centered boolean (default == TRUE). If a coverage has already been centered by by dividing each bin by global mean signal of the sample
+    #' @param centered boolean (default == FALSE) whether a coverage has already been centered by by dividing each bin by global mean signal of the sample
     #' 
-    #' @param cbs boolean (default == FALSE). Whether to perform cbs on the drycleaned coverage
+    #' @param cbs boolean (default == FALSE) whether to perform cbs on the drycleaned coverage
     #' 
-    #' @param cnsignif int(default = 1e-5) The significance levels for the test to accept change-points.
+    #' @param cnsignif integer (default = 1e-5) the significance levels for the tests in cbs to accept change-points
     #'
-    #' @param mc.cores interger (default == 1). Number of cores to use for parallelization.
+    #' @param mc.cores interger (default == 1) number of cores to use for parallelization
     #' 
-    #' @param whole_genome boolean (default = TRUE). For this function always set this parameter to TRUE.
+    #' @param whole_genome boolean (default = TRUE) for this function always set this parameter to TRUE
     #' 
-    #' @param use.blacklist boolean (default = FALSE). Whether to exclude off-target markers in case of Exomes or targeted sequencing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not.
+    #' @param use.blacklist boolean (default = FALSE) whether to exclude off-target markers in case of Exomes or targeted sequencing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not
     #'
-    #' @param blacklist_path character (default = NA). If use.blacklist == TRUE, path a GRange marking if each marker is set to be excluded or not
+    #' @param blacklist_path character (default = NA) if use.blacklist == TRUE, path a GRanges object marking if each marker is set to be excluded or not
     #'
-    #' @param germline.filter boolean (default == FALSE). If germline markers need to be removed from decomposition.
+    #' @param germline.filter boolean (default == FALSE) if germline markers need to be removed from decomposition
     #'
-    #' @param germline.file character (default == NA). Path to file with germline markers.
+    #' @param germline.file character (default == NA) path to file with germline markers
     #' 
-    #' @param verbose boolean (default == TRUE). Outputs progress.
+    #' @param verbose boolean (default == TRUE) outputs progress
     #' 
-    #' @param is.human boolean (default == TRUE). Organism type.
+    #' @param is.human boolean (default == TRUE) organism type
     #' 
-    #' @param field character (default == "reads.corrected"). Field to use for processing.
+    #' @param field character (default == "reads.corrected") field to use for processing
     #' 
-    #' @param all.chr list(default = c(as.character(1:22), "X")) list of chromosomes
+    #' @param all.chr list (default = c(as.character(1:22), "X")) list of chromosomes
     #' 
-    #' @param testing boolean(default = FALSE) DO NOT CHANGE
+    #' @param testing boolean (default = FALSE) DO NOT CHANGE
     #' 
-    #' @return Data table with drycleaned coverage and drycleaned coverage after CBS
+    #' @return Drycleaned coverage or drycleaned coverage after CBS in GRanges format
     
-    clean = function(cov, centered = TRUE, cbs = FALSE, cnsignif = 1e-5, mc.cores = 1, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, blacklist_path = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE, all.chr = c(as.character(1:22), "X"), testing = FALSE){
+    clean = function(cov, centered = FALSE, cbs = FALSE, cnsignif = 1e-5, mc.cores = 1, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, blacklist_path = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE, all.chr = c(as.character(1:22), "X"), testing = FALSE){
       
       message("Loading coverage")
       private$history <- rbindlist(list(private$history, data.table(action = paste("Loaded coverage from", cov), date = as.character(Sys.time()))))
@@ -241,10 +241,7 @@ dryclean <- R6::R6Class("dryclean",
       #dt = data.table(cov.dc = cov, cov.dc.cbs = NULL)
       
       private$history <- rbindlist(list(private$history, data.table(action = paste("Finished drycleaning the coverage file"), date = as.character(Sys.time()))))
-      
-      if(cbs == FALSE){
-        return(cov)
-      }
+    
 
       if(cbs == TRUE){
         
@@ -285,10 +282,13 @@ dryclean <- R6::R6Class("dryclean",
         
         private$history <- rbindlist(list(private$history, data.table(action = paste("Applied CBS correction to the drycleaned coverage file"), date = as.character(Sys.time()))))
         
-        return(out)
+        saveRDS(out, "cbs_output.rds")
+        
+        private$history <- rbindlist(list(private$history, data.table(action = paste("Saved CBS output in current directory as cbs_output.rds"), date = as.character(Sys.time()))))
+        
       }
         
-      #return(dt)
+      return(cov)
     },
 
      
@@ -615,53 +615,53 @@ pon <- R6::R6Class("pon",
                      #' @method initialize() initialize()
                      #' @description Initialize PON object. Authors: Aditya Deshpande, Sebastian Brylka
                      #' 
-                     #' @param normal_vector Character vector of paths to normal samples
+                     #' @param normal_vector character (default == c()) vector of paths to normal samples
                      #' 
-                     #' @param pon_path Character path to PON/detergent
+                     #' @param pon_path character (default == NULL) path to PON/detergent
                      #' 
-                     #' @param create_new_pon Boolean whether we want to create a new PON from normal samples or use the existing PON
+                     #' @param create_new_pon boolean (default == FALSE) whether to create a new PON from normal samples
                      #' 
-                     #' @param save_pon Boolean if create_new_pon == TRUE, whether to save pon to path given by pon_path
+                     #' @param save_pon boolean (default == FALSE) if create_new_pon == TRUE, whether to save pon to path given by pon_path
                      #' 
-                     #' @param field character (default == "reads.corrected"). Field to use for processing.
+                     #' @param field character (default == "reads.corrected") field to use for processing
                      #'
-                     #' @param use.all boolean (default == TRUE). If all normal samples are to be used for creating PON.
+                     #' @param use.all boolean (default == TRUE) if all normal samples are to be used for creating PON
                      #' 
-                     #' @param choose.randomly boolean (default == FALSE). If a random subset of normal samples are to be used for creating PON.
+                     #' @param choose.randomly boolean (default == FALSE) if a random subset of normal samples are to be used for creating PON
                      #' 
-                     #' @param choose.by.clustering boolean (default == FALSE). Clusters normal samples based on the genomic background and takes a random sample from within the clusters.
+                     #' @param choose.by.clustering boolean (default == FALSE) clusters normal samples based on the genomic background and takes a random sample from within the clusters
                      #' 
-                     #' @param number.of.samples interger (default == 50). If choose.by.clustering == TRUE, this is the number of clusters at which to cut tree.
+                     #' @param number.of.samples interger (default == 50) if choose.by.clustering == TRUE, this is the number of clusters at which to cut tree
                      #'
-                     #' @param tolerance numeric (default == 0.0001). Tolerance for error for batch rPCA. We suggest keeping this value.
+                     #' @param tolerance numeric (default == 0.0001) tolerance for error for batch rPCA. We suggest keeping this value
                      #' 
-                     #' @param num.cores interger (default == 1). Number of cores to use for parallelization.
+                     #' @param num.cores integer (default == 1) number of cores to use for parallelization
                      #'
-                     #' @param verbose boolean (default == TRUE). Outputs progress.
+                     #' @param verbose boolean (default == TRUE) outputs progress
                      #'
-                     #' @param is.human boolean (default == TRUE). Organism type.
+                     #' @param is.human boolean (default == TRUE) organism type
                      #' 
-                     #' @param build genome build to define PAR region in chromosome X.
+                     #' @param build character (default == "hg19") genome build to define PAR region in chromosome X
                      #'
-                     #' @param PAR.file this is a GRanges with the boundaries of PAR region in X chr.
+                     #' @param PAR.file character (default == NULL) this is a GRanges with the boundaries of PAR region in X chr
                      #'
-                     #' @param balance Boolean (default == TRUE) experimental variable to take into consideration 1 copy of X chr in male sample
+                     #' @param balance boolean (default == TRUE) experimental variable to take into consideration 1 copy of X chr in male sample
                      #'
-                     #' @param infer.germline boolean (default = FALSE). If use the L matrix to infer germline events.
+                     #' @param infer.germline boolean (default = FALSE) if use the L matrix to infer germline events
                      #'
-                     #' @param signal.thresh numeric (default == 0.5). This is the threshold to be used to identify an amplification (markers with signal intensity > 0.5) or deletions (markers with signal intensity < -0.5) in log space from dryclean outputs.
+                     #' @param signal.thresh numeric (default == 0.5) this is the threshold to be used to identify an amplification (markers with signal intensity > 0.5) or deletions (markers with signal intensity < -0.5) in log space from dryclean outputs
                      #'
-                     #' @param pct.thresh numeric (default == 0.98). Proportion of samples in which a given marker is free of germline event.
+                     #' @param pct.thresh numeric (default == 0.98) proportion of samples in which a given marker is free of germline event
                      #'
-                     #' @param wgs boolean for whether whole genome is being used
+                     #' @param wgs boolean (default == TRUE) whether whole genome is being used
                      #'
                      #' @param target_resolution numeric (default == 1e3) resolution at which to conduct analyses
                      #'
                      #' @param nochr logical (default = TRUE) remove chr prefix
                      #'
-                     #' @param all.chr list(default = c(as.character(1:22), "X")) list of chromosomes
+                     #' @param all.chr list (default = c(as.character(1:22), "X")) list of chromosomes
                      
-                     initialize = function(normal_vector = c(), pon_path = NULL, create_new_pon = FALSE, save_pon = FALSE, field = "count", use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", PAR.file = NULL, balance = TRUE, infer.germline = FALSE, signal.thresh = 0.3, pct.thresh = 0.80, wgs = TRUE, target_resolution = 1000, nochr = TRUE, all.chr = c(as.character(1:22), "X")) {
+                     initialize = function(normal_vector = c(), pon_path = NULL, create_new_pon = FALSE, save_pon = FALSE, field = "reads.corrected", use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", PAR.file = NULL, balance = TRUE, infer.germline = FALSE, signal.thresh = 0.3, pct.thresh = 0.80, wgs = TRUE, target_resolution = 1000, nochr = TRUE, all.chr = c(as.character(1:22), "X")) {
                        
                        message("Loading PON...")
                        

@@ -41,7 +41,7 @@ Initialize PON object. Authors: Aditya Deshpande, Sebastian Brylka
   pon_path = NULL,
   create_new_pon = FALSE,
   save_pon = FALSE,
-  field = "count",
+  field = "reads.corrected",
   use.all = TRUE,
   choose.randomly = FALSE,
   choose.by.clustering = FALSE,
@@ -66,51 +66,51 @@ Initialize PON object. Authors: Aditya Deshpande, Sebastian Brylka
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{normal_vector}}{Character vector of paths to normal samples}
+\item{\code{normal_vector}}{character (default == c()) vector of paths to normal samples}
 
-\item{\code{pon_path}}{Character path to PON/detergent}
+\item{\code{pon_path}}{character (default == NULL) path to PON/detergent}
 
-\item{\code{create_new_pon}}{Boolean whether we want to create a new PON from normal samples or use the existing PON}
+\item{\code{create_new_pon}}{boolean (default == FALSE) whether to create a new PON from normal samples}
 
-\item{\code{save_pon}}{Boolean if create_new_pon == TRUE, whether to save pon to path given by pon_path}
+\item{\code{save_pon}}{boolean (default == FALSE) if create_new_pon == TRUE, whether to save pon to path given by pon_path}
 
-\item{\code{field}}{character (default == "reads.corrected"). Field to use for processing.}
+\item{\code{field}}{character (default == "reads.corrected") field to use for processing}
 
-\item{\code{use.all}}{boolean (default == TRUE). If all normal samples are to be used for creating PON.}
+\item{\code{use.all}}{boolean (default == TRUE) if all normal samples are to be used for creating PON}
 
-\item{\code{choose.randomly}}{boolean (default == FALSE). If a random subset of normal samples are to be used for creating PON.}
+\item{\code{choose.randomly}}{boolean (default == FALSE) if a random subset of normal samples are to be used for creating PON}
 
-\item{\code{choose.by.clustering}}{boolean (default == FALSE). Clusters normal samples based on the genomic background and takes a random sample from within the clusters.}
+\item{\code{choose.by.clustering}}{boolean (default == FALSE) clusters normal samples based on the genomic background and takes a random sample from within the clusters}
 
-\item{\code{number.of.samples}}{interger (default == 50). If choose.by.clustering == TRUE, this is the number of clusters at which to cut tree.}
+\item{\code{number.of.samples}}{interger (default == 50) if choose.by.clustering == TRUE, this is the number of clusters at which to cut tree}
 
-\item{\code{verbose}}{boolean (default == TRUE). Outputs progress.}
+\item{\code{verbose}}{boolean (default == TRUE) outputs progress}
 
-\item{\code{num.cores}}{interger (default == 1). Number of cores to use for parallelization.}
+\item{\code{num.cores}}{integer (default == 1) number of cores to use for parallelization}
 
-\item{\code{tolerance}}{numeric (default == 0.0001). Tolerance for error for batch rPCA. We suggest keeping this value.}
+\item{\code{tolerance}}{numeric (default == 0.0001) tolerance for error for batch rPCA. We suggest keeping this value}
 
-\item{\code{is.human}}{boolean (default == TRUE). Organism type.}
+\item{\code{is.human}}{boolean (default == TRUE) organism type}
 
-\item{\code{build}}{genome build to define PAR region in chromosome X.}
+\item{\code{build}}{character (default == "hg19") genome build to define PAR region in chromosome X}
 
-\item{\code{PAR.file}}{this is a GRanges with the boundaries of PAR region in X chr.}
+\item{\code{PAR.file}}{character (default == NULL) this is a GRanges with the boundaries of PAR region in X chr}
 
-\item{\code{balance}}{Boolean (default == TRUE) experimental variable to take into consideration 1 copy of X chr in male sample}
+\item{\code{balance}}{boolean (default == TRUE) experimental variable to take into consideration 1 copy of X chr in male sample}
 
-\item{\code{infer.germline}}{boolean (default = FALSE). If use the L matrix to infer germline events.}
+\item{\code{infer.germline}}{boolean (default = FALSE) if use the L matrix to infer germline events}
 
-\item{\code{signal.thresh}}{numeric (default == 0.5). This is the threshold to be used to identify an amplification (markers with signal intensity > 0.5) or deletions (markers with signal intensity < -0.5) in log space from dryclean outputs.}
+\item{\code{signal.thresh}}{numeric (default == 0.5) this is the threshold to be used to identify an amplification (markers with signal intensity > 0.5) or deletions (markers with signal intensity < -0.5) in log space from dryclean outputs}
 
-\item{\code{pct.thresh}}{numeric (default == 0.98). Proportion of samples in which a given marker is free of germline event.}
+\item{\code{pct.thresh}}{numeric (default == 0.98) proportion of samples in which a given marker is free of germline event}
 
-\item{\code{wgs}}{boolean for whether whole genome is being used}
+\item{\code{wgs}}{boolean (default == TRUE) whether whole genome is being used}
 
 \item{\code{target_resolution}}{numeric (default == 1e3) resolution at which to conduct analyses}
 
 \item{\code{nochr}}{logical (default = TRUE) remove chr prefix}
 
-\item{\code{all.chr}}{list(default = c(as.character(1:22), "X")) list of chromosomes}
+\item{\code{all.chr}}{list (default = c(as.character(1:22), "X")) list of chromosomes}
 }
 \if{html}{\out{</div>}}
 }

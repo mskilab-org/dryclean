@@ -47,7 +47,7 @@ Function begins the online rPCA process. Use this function if you performed batc
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{dryclean$clean(
   cov,
-  centered = TRUE,
+  centered = FALSE,
   cbs = FALSE,
   cnsignif = 1e-05,
   mc.cores = 1,
@@ -67,35 +67,35 @@ Function begins the online rPCA process. Use this function if you performed batc
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{cov}}{path to the granges coverage file to be drycleaned}
+\item{\code{cov}}{character path to the granges coverage file to be drycleaned}
 
-\item{\code{centered}}{boolean (default == TRUE). If a coverage has already been centered by by dividing each bin by global mean signal of the sample}
+\item{\code{centered}}{boolean (default == FALSE) whether a coverage has already been centered by by dividing each bin by global mean signal of the sample}
 
-\item{\code{cbs}}{boolean (default == FALSE). Whether to perform cbs on the drycleaned coverage}
+\item{\code{cbs}}{boolean (default == FALSE) whether to perform cbs on the drycleaned coverage}
 
-\item{\code{cnsignif}}{int(default = 1e-5) The significance levels for the test to accept change-points.}
+\item{\code{cnsignif}}{integer (default = 1e-5) the significance levels for the tests in cbs to accept change-points}
 
-\item{\code{mc.cores}}{interger (default == 1). Number of cores to use for parallelization.}
+\item{\code{mc.cores}}{interger (default == 1) number of cores to use for parallelization}
 
-\item{\code{verbose}}{boolean (default == TRUE). Outputs progress.}
+\item{\code{verbose}}{boolean (default == TRUE) outputs progress}
 
-\item{\code{whole_genome}}{boolean (default = TRUE). For this function always set this parameter to TRUE.}
+\item{\code{whole_genome}}{boolean (default = TRUE) for this function always set this parameter to TRUE}
 
-\item{\code{use.blacklist}}{boolean (default = FALSE). Whether to exclude off-target markers in case of Exomes or targeted sequencing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not.}
+\item{\code{use.blacklist}}{boolean (default = FALSE) whether to exclude off-target markers in case of Exomes or targeted sequencing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not}
 
-\item{\code{blacklist_path}}{character (default = NA). If use.blacklist == TRUE, path a GRange marking if each marker is set to be excluded or not}
+\item{\code{blacklist_path}}{character (default = NA) if use.blacklist == TRUE, path a GRanges object marking if each marker is set to be excluded or not}
 
-\item{\code{germline.filter}}{boolean (default == FALSE). If germline markers need to be removed from decomposition.}
+\item{\code{germline.filter}}{boolean (default == FALSE) if germline markers need to be removed from decomposition}
 
-\item{\code{germline.file}}{character (default == NA). Path to file with germline markers.}
+\item{\code{germline.file}}{character (default == NA) path to file with germline markers}
 
-\item{\code{field}}{character (default == "reads.corrected"). Field to use for processing.}
+\item{\code{field}}{character (default == "reads.corrected") field to use for processing}
 
-\item{\code{is.human}}{boolean (default == TRUE). Organism type.}
+\item{\code{is.human}}{boolean (default == TRUE) organism type}
 
-\item{\code{all.chr}}{list(default = c(as.character(1:22), "X")) list of chromosomes}
+\item{\code{all.chr}}{list (default = c(as.character(1:22), "X")) list of chromosomes}
 
-\item{\code{testing}}{boolean(default = FALSE) DO NOT CHANGE}
+\item{\code{testing}}{boolean (default = FALSE) DO NOT CHANGE}
 }
 \if{html}{\out{</div>}}
 }
@@ -104,7 +104,7 @@ The function begins the online rPCA process. It is the wrapper that takes in GRa
 }
 
 \subsection{Returns}{
-Data table with drycleaned coverage and drycleaned coverage after CBS
+Drycleaned coverage or drycleaned coverage after CBS in GRanges format
 }
 }
 \if{html}{\out{<hr>}}
