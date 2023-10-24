@@ -126,7 +126,7 @@ The parameters that could be used in PON generation:
     <tr>
       <td style="border: 1px solid black; padding: 5px;">field</td>
       <td style="border: 1px solid black; padding: 5px;">"reads.corrected"</td>
-      <td style="border: 1px solid black; padding: 5px;">Field denoting read depth to use for processing</td>
+      <td style="border: 1px solid black; padding: 5px;">Field name in GRanges metadata of normal samples to use for PON generation</td>
     </tr>
     <tr>
       <td style="border: 1px solid black; padding: 5px;">use.all</td>
@@ -337,7 +337,7 @@ The parameters that can be used in clean() function:
     <tr>
       <td style="border: 1px solid black; padding: 5px;">field</td>
       <td style="border: 1px solid black; padding: 5px;">"reads.corrected"</td>
-      <td style="border: 1px solid black; padding: 5px;">Field to use for processing</td>
+      <td style="border: 1px solid black; padding: 5px;">Field name in GRanges metadata of coverage to use for drycleaning</td>
     </tr>
     <tr>
       <td style="border: 1px solid black; padding: 5px;">centered</td>
