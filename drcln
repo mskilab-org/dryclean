@@ -61,11 +61,10 @@ if (!exists('opt'))
 system(paste('mkdir -p',  opt$outdir))
 
 ##############################
-#suppressWarnings(suppressPackageStartupMessages(library(dryclean)))
+suppressWarnings(suppressPackageStartupMessages(library(dryclean)))
         
         message(dr.str)
         
-        suppressWarnings(suppressPackageStartupMessages(devtools::load_all()))
         suppressWarnings(suppressPackageStartupMessages(library(dplyr)))
         suppressWarnings(suppressPackageStartupMessages(library(GenomicRanges)))
         
