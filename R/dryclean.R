@@ -97,21 +97,27 @@ dryclean <- R6::R6Class("dryclean",
       
       private$history <- rbindlist(list(private$history, data.table(action = "Loaded PON", date = as.character(Sys.time()))))
         
-        tumor.length <- cov %>%
-          gr2dt() %>%
-          dplyr::filter(seqnames != "Y") %>%
-          dt2gr() %>%
-          length()
-        tumor.binsize = median(gr2dt(cov)$width)
-        
-        
-        pon.length <- private$pon$get_template() %>%
-          gr2dt() %>%
-          dplyr::filter(seqnames != "Y") %>%
-          dt2gr() %>%
-          length()
-        pon.binsize = median(gr2dt(private$pon$get_template())$width)
-        
+      tumor.binsize = median(gr2dt(cov)$width)
+      pon.binsize = median(gr2dt(private$pon$get_template())$width)
+      
+      if (tumor.binsize != pon.binsize & testing == FALSE){
+        message(paste0("WARNING: Input tumor bin size = ", tumor.binsize,"bp. PON bin size = ", pon.binsize,"bp. Rebinning tumor to bin size of PON..."))
+        private$history <- rbindlist(list(private$history, data.table(action = paste("Rebinning tumor to", pon.binsize, "bp bin size"), date = as.character(Sys.time()))))
+        cov = collapse_cov(cov, bin.size = pon.binsize, this.field = field)
+      }
+      
+      tumor.length <- cov %>%
+        gr2dt() %>%
+        dplyr::filter(seqnames != "Y") %>%
+        dt2gr() %>%
+        length()
+      
+      pon.length <- private$pon$get_template() %>%
+        gr2dt() %>%
+        dplyr::filter(seqnames != "Y") %>%
+        dt2gr() %>%
+        length()
+   
         if (tumor.length != pon.length ) {
           dt1 = data.table(chr = names(seqlengths(cov)), length_coverage = seqlengths(cov))
           dt2 = data.table(chr = names(private$pon$get_seqlengths()), length_pon = private$pon$get_seqlengths())
@@ -126,13 +132,7 @@ dryclean <- R6::R6Class("dryclean",
             stop("ERROR: seqlengths of coverage and PON do not match. Use get_mismatch() function to see mismatching seqlengths")
           }
         }
-        
-        if (tumor.binsize != pon.binsize & testing == FALSE){
-          message("Input tumor is not binned the same as the PON. Rebinning to bin size of PON...")
-          cov = collapse_cov(cov, bin.size = pon.binsize, this.field = field)
-        }
-      
-      
+   
       if(verbose == TRUE){
         message(paste0("Let's begin, this is whole exome/genome"))
       }
