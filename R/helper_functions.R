@@ -261,18 +261,41 @@ prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA)
 }
 
 
+# collapse_cov <- function(cov.gr, bin.size = target_resolution, this.field = field){
+#   BINSIZE.ROUGH = bin.size
+#   cov.gr = cov.gr[, this.field]
+#   cov.gr = gr2dt(cov.gr)
+#   setnames(cov.gr, this.field, "signal")
+#   cov.gr = cov.gr[!is.infinite(signal), .(signal = median(signal, na.rm = TRUE)),
+#                   by = .(seqnames, start = floor(start/BINSIZE.ROUGH)*BINSIZE.ROUGH+1)]
+#   cov.gr[, end := (start + BINSIZE.ROUGH) - 1]
+#   setnames(cov.gr, "signal", this.field)
+#   cov.gr = dt2gr(cov.gr)
+#   return(cov.gr)
+# }
+
 collapse_cov <- function(cov.gr, bin.size = target_resolution, this.field = field){
   BINSIZE.ROUGH = bin.size
   cov.gr = cov.gr[, this.field]
   cov.gr = gr2dt(cov.gr)
   setnames(cov.gr, this.field, "signal")
+  cov_og = cov.gr
   cov.gr = cov.gr[!is.infinite(signal), .(signal = median(signal, na.rm = TRUE)),
-                  by = .(seqnames, start = floor(start/BINSIZE.ROUGH)*BINSIZE.ROUGH+1)]
+                  by = .(seqnames, start = floor(start/BINSIZE.ROUGH)*BINSIZE.ROUGH+1)]  
   cov.gr[, end := (start + BINSIZE.ROUGH) - 1]
+  s <- cov_og %>% group_by(seqnames) %>% summarize(end = max(end)) %>% data.table() %>% filter(end %% BINSIZE.ROUGH == 0) %>% select(seqnames)  
+  for (chr in s$seqnames){
+    cov_fixed <- cov.gr %>% filter(seqnames == chr) %>% select(seqnames, start, end, signal)
+    cov_fixed <- cov_fixed[nrow(cov_fixed)]
+    cov_fixed <- cov_fixed %>%
+      mutate(start = end + 1, end = end + BINSIZE.ROUGH)
+    cov.gr <- rbind(cov.gr,cov_fixed)
+  }
   setnames(cov.gr, "signal", this.field)
   cov.gr = dt2gr(cov.gr)
   return(cov.gr)
 }
+
 
 
 generate_template <- function(cov, wgs = wgs, target_resolution = target_resolution, this.field = field, nochr = TRUE, all.chr = c(as.character(1:22), "X")){
