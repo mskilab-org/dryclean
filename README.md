@@ -399,7 +399,7 @@ The parameters that can be used in clean() function:
 
 <br>
 
-For 'dryclean' to work correctly, the lengths of each sequence on each chromosome in the coverage and PON (Panel of Normal) data must match. If you attempt to normalize the coverage with PON data of different sequence lengths, you will encounter an error. In the event of such an error, you can utilize the <code>get_mismatch()</code> method to obtain a data table of all chromosomes with mismatched lengths. Additionally, you can use the <code>get_history()</code> method to review all actions performed on the object with timestamps.
+For 'dryclean' to work correctly, the number of bins on each chromosome in the coverage and PON (Panel of Normal) data must match. If you attempt to normalize the coverage with PON data of different number of bins, you will encounter an error. In the event of such an error, you can utilize the <code>get_mismatch()</code> method to obtain a data table of all chromosomes with mismatched lengths. Additionally, you can use the <code>get_history()</code> method to review all actions performed on the object with timestamps.
 
 
 

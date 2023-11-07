@@ -238,7 +238,7 @@ wash_cycle <- function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat
 #' 
 #' @author Aditya Deshpande
 
-prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA){
+prep_cov <- function(m.vec = m.vec, blacklist = FALSE, blacklist_path = NA){
   m.vec = gr2dt(m.vec)
   m.vec = m.vec[, .(seqnames, signal)]
   m.vec[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
@@ -249,7 +249,7 @@ prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA)
   m.vec[signal < 0, signal := min.cov]
   
   if (blacklist){
-    blacklist.pon =  readRDS(paste0(burnin.samples.path, "/blacklist.rds"))
+    blacklist.pon =  readRDS(blacklist_path)
     m.vec$blacklisted = blacklist.pon$blacklisted
     m.vec[blacklisted == TRUE, signal := NA]
     m.vec = na.omit(m.vec)

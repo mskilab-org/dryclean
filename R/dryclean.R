@@ -129,7 +129,7 @@ dryclean <- R6::R6Class("dryclean",
             filter(length_coverage != length_pon)
           private$dt_mismatch = dt_mismatch
           if(testing == FALSE){
-            stop("ERROR: seqlengths of coverage and PON do not match. Use get_mismatch() function to see mismatching seqlengths")
+            stop("ERROR: Number of bins of coverage and PON does not match. Use get_mismatch() function to see mismatched chromosomes")
           }
         }
    
@@ -166,7 +166,7 @@ dryclean <- R6::R6Class("dryclean",
         cov <- cov %>% 
           dplyr::mutate(signal = ifelse(is.na(signal), 0, signal)) %>%
           dplyr::mutate(signal = ifelse(is.infinite(signal), NA, signal)) %>%
-          dplyr::mutate(signal = signal / mean(signal))
+          dplyr::mutate(signal = signal / median(signal))
       }
       
       cov = cov %>% dt2gr()
@@ -174,7 +174,7 @@ dryclean <- R6::R6Class("dryclean",
       cov = sortSeqlevels(cov)
       cov = sort(cov)
       
-      m.vec = prep_cov(cov, blacklist = use.blacklist)
+      m.vec = prep_cov(cov, blacklist = use.blacklist, blacklist_path = blacklist_path)
       
       m.vec = as.matrix(m.vec$signal)
       L.burnin = private$pon$get_L()
@@ -186,6 +186,14 @@ dryclean <- R6::R6Class("dryclean",
       
       if(verbose == TRUE){
         message("Initializing wash cycle")
+      }
+      
+      if (use.blacklist){
+        blacklisted <- readRDS(blacklist_path)$blacklisted
+        blacklisted <- !blacklisted
+        L.burnin = L.burnin[blacklisted,]
+        S.burnin = S.burnin[blacklisted,]
+        U.hat = U.hat[blacklisted, ]
       }
       
       decomposed = wash_cycle(m.vec = m.vec, L.burnin = L.burnin,
