@@ -288,8 +288,9 @@ collapse_cov <- function(cov.gr, bin.size = target_resolution, this.field = fiel
     cov_fixed <- cov.gr %>% filter(seqnames == chr) %>% select(seqnames, start, end, signal)
     cov_fixed <- cov_fixed[nrow(cov_fixed)]
     cov_fixed <- cov_fixed %>%
-      mutate(start = end + 1, end = end + BINSIZE.ROUGH)
+      mutate(start = end + 1, end = end + BINSIZE.ROUGH, signal = NA)
     cov.gr <- rbind(cov.gr,cov_fixed)
+    cov.gr <- cov.gr %>% arrange(seqnames, start)
   }
   setnames(cov.gr, "signal", this.field)
   cov.gr = dt2gr(cov.gr)

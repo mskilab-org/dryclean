@@ -61,7 +61,7 @@ dryclean <- R6::R6Class("dryclean",
     #' 
     #' @param whole_genome boolean (default = TRUE) for this function always set this parameter to TRUE
     #' 
-    #' @param use.blacklist boolean (default = FALSE) whether to exclude off-target markers in case of Exomes or targeted sequencing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not
+    #' @param use.blacklist boolean (default = FALSE) whether to exclude off-target markers in case of Exomes or targeted sequencing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not or will use a default mask
     #'
     #' @param blacklist_path character (default = NA) if use.blacklist == TRUE, path a GRanges object marking if each marker is set to be excluded or not
     #'
@@ -81,11 +81,12 @@ dryclean <- R6::R6Class("dryclean",
     #' 
     #' @return Drycleaned coverage or drycleaned coverage after CBS in GRanges format
     
-    clean = function(cov, centered = FALSE, cbs = FALSE, cnsignif = 1e-5, mc.cores = 1, verbose = TRUE, whole_genome = TRUE, use.blacklist = FALSE, blacklist_path = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE, all.chr = c(as.character(1:22), "X"), testing = FALSE){
+    clean = function(cov, centered = FALSE, cbs = FALSE, cnsignif = 1e-5, mc.cores = 1, verbose = TRUE, whole_genome = TRUE, use.blacklist = TRUE, blacklist_path = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE, all.chr = c(as.character(1:22), "X"), testing = FALSE){
       
       message("Loading coverage")
       private$history <- rbindlist(list(private$history, data.table(action = paste("Loaded coverage from", cov), date = as.character(Sys.time()))))
       cov = readRDS(cov)
+      cov.og = cov
       
       #detergent.pon.path = private$pon.path
       
@@ -104,6 +105,7 @@ dryclean <- R6::R6Class("dryclean",
         message(paste0("WARNING: Input tumor bin size = ", tumor.binsize,"bp. PON bin size = ", pon.binsize,"bp. Rebinning tumor to bin size of PON..."))
         private$history <- rbindlist(list(private$history, data.table(action = paste("Rebinning tumor to", pon.binsize, "bp bin size"), date = as.character(Sys.time()))))
         cov = collapse_cov(cov, bin.size = pon.binsize, this.field = field)
+        cov.og = cov
       }
       
       tumor.length <- cov %>%
@@ -174,6 +176,12 @@ dryclean <- R6::R6Class("dryclean",
       cov = sortSeqlevels(cov)
       cov = sort(cov)
       
+      if(use.blacklist == TRUE & is.na(blacklist_path)){
+        blacklist_path = system.file("extdata", "blacklist_A.rds", package = 'dryclean')
+        message(paste0("Applying the default mask to the coverage"))
+        private$history <- rbindlist(list(private$history, data.table(action = paste("Applying the defualt mask to coverage"), date = as.character(Sys.time()))))
+      }
+      
       m.vec = prep_cov(cov, blacklist = use.blacklist, blacklist_path = blacklist_path)
       
       m.vec = as.matrix(m.vec$signal)
@@ -210,12 +218,16 @@ dryclean <- R6::R6Class("dryclean",
       if (use.blacklist){
         cov[is.na(signal), signal := median.chr]
         cov[is.infinite(signal), signal := median.chr]
-        blacklist.pon =  readRDS(blacklist_path)
-        cov$blacklisted = blacklist.pon$blacklisted
+        blacklist.pon =  gr2dt(readRDS(blacklist_path))
+        blacklist.pon <- blacklist.pon %>%
+          select(blacklisted, seqnames, start)
+        cov <- merge(cov, blacklist.pon, by = c("seqnames","start"))
+        #cov$blacklisted = blacklist.pon$blacklisted
         cov[blacklisted == TRUE, signal := NA]
         cov = na.omit(cov)
       }
       
+    
       setnames(cov, "signal", "input.read.counts")
       cov = cbind(decomposed[[2]], cov)
       colnames(cov)[1] = 'foreground.log'
@@ -231,6 +243,7 @@ dryclean <- R6::R6Class("dryclean",
       cov[is.na(input.read.counts), background := NA]
       cov[, log.reads := log(input.read.counts)]
       cov[is.infinite(log.reads), log.reads := NA]
+      
       
       if (germline.filter){
         germ.file = private$pon$get_inf_germ()
@@ -295,7 +308,20 @@ dryclean <- R6::R6Class("dryclean",
         private$history <- rbindlist(list(private$history, data.table(action = paste("Saved CBS output in current directory as cbs_output.rds"), date = as.character(Sys.time()))))
         
       }
-        
+      
+      cov <- cov.og %>%
+        gr2dt() %>%                                                                                                                
+        select(seqnames, start,end,strand) %>%                                                                                     
+        arrange(seqnames, start) %>%                                                                                               
+        left_join(                                                                                                                 
+          gr2dt(cov),                                                                                                               
+          by = c("seqnames" = "seqnames", "start" = "start", "end" = "end", "strand" = "strand")                                   
+        ) %>% 
+        mutate(blacklisted = ifelse(is.na(blacklisted), TRUE, FALSE)) %>%
+        dt2gr() 
+      rm(cov.og)
+
+      
       return(cov)
     },
 

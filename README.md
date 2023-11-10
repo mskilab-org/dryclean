@@ -362,7 +362,7 @@ The parameters that can be used in clean() function:
     <tr>
       <td style="border: 1px solid black; padding: 5px;">use.blacklist</td>
       <td style="border: 1px solid black; padding: 5px;">FALSE</td>
-      <td style="border: 1px solid black; padding: 5px;">Whether to exclude off-target markers in case of Exomes or targeted sequencing; If set to TRUE, needs a GRange marking if each marker is set to be excluded or not</td>
+      <td style="border: 1px solid black; padding: 5px;">Whether to exclude off-target markers in case of Exomes or targeted sequencing; If set to TRUE, it will use a defualt mask or needs a path to GRanges marking if each marker is set to be excluded or not as <code>blacklist_path</code> </td>
     </tr>
     <tr>
       <td style="border: 1px solid black; padding: 5px;">blacklist_path</td>
@@ -535,7 +535,7 @@ Options:
 		whether there are blacklisted makers
 
 	-l BLACKLIST_PATH, --blacklist_path=BLACKLIST_PATH
-		if --blacklist == TRUE, path to a GRanges object marking if each marker is set to be excluded or not
+		if --blacklist == TRUE, path to a GRanges object marking if each marker is set to be excluded or it willuse a default mask
 
 	-g GERMLINE.FILTER, --germline.filter=GERMLINE.FILTER
 		if PON based germline filter is to be used for removing some common germline events, if set to TRUE, give path to germline annotated file
