@@ -1,6 +1,10 @@
 [![Build Status](https://app.travis-ci.com/mskilab/dryclean.svg?branch=master)](https://app.travis-ci.com/mskilab/dryclean)
 [![codecov.io](https://img.shields.io/codecov/c/github/mskilab/dryclean.svg)](https://codecov.io/github/mskilab/dryclean?branch=master)
 
+### Dockerized installation
+
+To make our life easier, we have created a `Docker` container with the latest stable release of Dryclean and its dependencies. This can be found [here](https://hub.docker.com/r/mskilab/dryclean/tags/). The latest updated version is `0.0.2`, so make sure to select the correct `tag`.
+
 ---
 title: dryclean tutorial
 ---
@@ -44,7 +48,7 @@ Install dryclean
 
 
 ```R
-devtools::install_github('mskilab/dryclean')
+devtools::install_github('mskilab-org/dryclean')
 ```
 
 (after installing R package) Add dryclean directory to PATH and test the executable 
