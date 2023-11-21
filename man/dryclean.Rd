@@ -52,14 +52,10 @@ Function begins the online rPCA process. Use this function if you performed batc
   cnsignif = 1e-05,
   mc.cores = 1,
   verbose = TRUE,
-  whole_genome = TRUE,
   use.blacklist = FALSE,
   blacklist_path = NA,
   germline.filter = FALSE,
-  germline.file = NA,
   field = "reads.corrected",
-  is.human = TRUE,
-  all.chr = c(as.character(1:22), "X"),
   testing = FALSE
 )}\if{html}{\out{</div>}}
 }
@@ -79,21 +75,13 @@ Function begins the online rPCA process. Use this function if you performed batc
 
 \item{\code{verbose}}{boolean (default == TRUE) outputs progress}
 
-\item{\code{whole_genome}}{boolean (default = TRUE) for this function always set this parameter to TRUE}
-
-\item{\code{use.blacklist}}{boolean (default = FALSE) whether to exclude off-target markers in case of Exomes or targeted sequencing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not}
+\item{\code{use.blacklist}}{boolean (default = FALSE) whether to exclude off-target markers in case of Exomes or targeted sequencing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not or will use a default mask}
 
 \item{\code{blacklist_path}}{character (default = NA) if use.blacklist == TRUE, path a GRanges object marking if each marker is set to be excluded or not}
 
 \item{\code{germline.filter}}{boolean (default == FALSE) if germline markers need to be removed from decomposition}
 
-\item{\code{germline.file}}{character (default == NA) path to file with germline markers}
-
 \item{\code{field}}{character (default == "reads.corrected") field to use for processing}
-
-\item{\code{is.human}}{boolean (default == TRUE) organism type}
-
-\item{\code{all.chr}}{list (default = c(as.character(1:22), "X")) list of chromosomes}
 
 \item{\code{testing}}{boolean (default = FALSE) DO NOT CHANGE}
 }
@@ -104,7 +92,7 @@ The function begins the online rPCA process. It is the wrapper that takes in GRa
 }
 
 \subsection{Returns}{
-Drycleaned coverage or drycleaned coverage after CBS in GRanges format
+Drycleaned coverage in GRanges format
 }
 }
 \if{html}{\out{<hr>}}

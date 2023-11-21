@@ -347,7 +347,7 @@ The parameters that can be used in clean() function:
     <tr>
       <td style="border: 1px solid black; padding: 5px;">cbs</td>
       <td style="border: 1px solid black; padding: 5px;">FALSE</td>
-      <td style="border: 1px solid black; padding: 5px;">Whether to perform cbs on the drycleaned coverage</td>
+      <td style="border: 1px solid black; padding: 5px;">Whether to perform cbs on the drycleaned coverage; If TRUE, saves CBS coverage as cbs_output.rds in output directory</td>
     </tr>
     <tr>
       <td style="border: 1px solid black; padding: 5px;">cnsignif</td>
@@ -375,24 +375,9 @@ The parameters that can be used in clean() function:
       <td style="border: 1px solid black; padding: 5px;">Whether germline markers need to be removed from decomposition</td>
     </tr>
     <tr>
-      <td style="border: 1px solid black; padding: 5px;">germline.file</td>
-      <td style="border: 1px solid black; padding: 5px;">NA</td>
-      <td style="border: 1px solid black; padding: 5px;">Path to file with germline markers</td>
-    </tr>
-    <tr>
       <td style="border: 1px solid black; padding: 5px;">verbose</td>
       <td style="border: 1px solid black; padding: 5px;">TRUE</td>
       <td style="border: 1px solid black; padding: 5px;">Outputs progress</td>
-    </tr>
-    <tr>
-      <td style="border: 1px solid black; padding: 5px;">is.human</td>
-      <td style="border: 1px solid black; padding: 5px;">TRUE</td>
-      <td style="border: 1px solid black; padding: 5px;">Organism type</td>
-    </tr>
-    <tr>
-      <td style="border: 1px solid black; padding: 5px;">all.chr</td>
-      <td style="border: 1px solid black; padding: 5px;">c(as.character(1:22), "X")</td>
-      <td style="border: 1px solid black; padding: 5px;">List of chromosomes</td>
     </tr>
   </tbody>
 </table>
@@ -528,9 +513,6 @@ Options:
 	-c CORES, --cores=CORES
 		number of cores to use
 
-	-w WHOLEGENOME, --wholeGenome=WHOLEGENOME
-		whether whole genome is being used
-
 	-b BLACKLIST, --blacklist=BLACKLIST
 		whether there are blacklisted makers
 
@@ -539,9 +521,6 @@ Options:
 
 	-g GERMLINE.FILTER, --germline.filter=GERMLINE.FILTER
 		if PON based germline filter is to be used for removing some common germline events, if set to TRUE, give path to germline annotated file
-
-	-f GERMLINE.FILE, --germline.file=GERMLINE.FILE
-		path to file annotated with germline calls, if germline.filter == TRUE
 
 	-m HUMAN, --human=HUMAN
 		whther the samples under consideration are human

@@ -121,11 +121,9 @@ test_that("clean", {
   
   a <- dryclean_object$clean(cov = sample.1.path, testing = TRUE)
   
-  expect_identical(names(dryclean_object$get_mismatch())[1], "chr")
-  
   expect_true(identical(colnames(values(a)), c("background.log", "foreground.log","input.read.counts", "median.chr", "foreground", "background", "log.reads")))
   
-  expect_equal(a$background.log[1], 0.05077155, tolerance = 0.00001)
+  expect_equal(a$background.log[1], 0.030576, tolerance = 0.00001)
 })
 
 
@@ -180,7 +178,7 @@ test_that("centering", {
   
   a <- dryclean_object$clean(cov = sample.1.path, testing = TRUE, centered = FALSE)
   
-  expect_equal(a$background.log[1], 0.0507715, tolerance = 0.00001) 
+  expect_equal(a$background.log[1], 0.030576, tolerance = 0.00001) 
   
 })
 

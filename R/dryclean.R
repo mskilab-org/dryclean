@@ -59,42 +59,31 @@ dryclean <- R6::R6Class("dryclean",
     #'
     #' @param mc.cores interger (default == 1) number of cores to use for parallelization
     #' 
-    #' @param whole_genome boolean (default = TRUE) for this function always set this parameter to TRUE
-    #' 
     #' @param use.blacklist boolean (default = FALSE) whether to exclude off-target markers in case of Exomes or targeted sequencing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not or will use a default mask
     #'
     #' @param blacklist_path character (default = NA) if use.blacklist == TRUE, path a GRanges object marking if each marker is set to be excluded or not
     #'
     #' @param germline.filter boolean (default == FALSE) if germline markers need to be removed from decomposition
     #'
-    #' @param germline.file character (default == NA) path to file with germline markers
-    #' 
     #' @param verbose boolean (default == TRUE) outputs progress
-    #' 
-    #' @param is.human boolean (default == TRUE) organism type
     #' 
     #' @param field character (default == "reads.corrected") field to use for processing
     #' 
-    #' @param all.chr list (default = c(as.character(1:22), "X")) list of chromosomes
-    #' 
     #' @param testing boolean (default = FALSE) DO NOT CHANGE
     #' 
-    #' @return Drycleaned coverage or drycleaned coverage after CBS in GRanges format
+    #' @return Drycleaned coverage in GRanges format
     
-    clean = function(cov, centered = FALSE, cbs = FALSE, cnsignif = 1e-5, mc.cores = 1, verbose = TRUE, whole_genome = TRUE, use.blacklist = TRUE, blacklist_path = NA, germline.filter = FALSE, germline.file = NA, field = "reads.corrected", is.human = TRUE, all.chr = c(as.character(1:22), "X"), testing = FALSE){
+    clean = function(cov, centered = FALSE, cbs = FALSE, cnsignif = 1e-5, mc.cores = 1, verbose = TRUE, use.blacklist = FALSE, blacklist_path = NA, germline.filter = FALSE, field = "reads.corrected", testing = FALSE){
       
       message("Loading coverage")
       private$history <- rbindlist(list(private$history, data.table(action = paste("Loaded coverage from", cov), date = as.character(Sys.time()))))
       cov = readRDS(cov)
-      cov.og = cov
-      
-      #detergent.pon.path = private$pon.path
+      cov <- cov %>% gr2dt() %>% filter(seqnames != 'Y') %>% dt2gr()
       
       if(verbose == TRUE){
         message("Loading PON a.k.a detergent")
       }
       
-      #rpca.1 = readRDS(detergent.pon.path)
       
       private$history <- rbindlist(list(private$history, data.table(action = "Loaded PON", date = as.character(Sys.time()))))
         
@@ -104,37 +93,35 @@ dryclean <- R6::R6Class("dryclean",
       if (tumor.binsize != pon.binsize & testing == FALSE){
         message(paste0("WARNING: Input tumor bin size = ", tumor.binsize,"bp. PON bin size = ", pon.binsize,"bp. Rebinning tumor to bin size of PON..."))
         private$history <- rbindlist(list(private$history, data.table(action = paste("Rebinning tumor to", pon.binsize, "bp bin size"), date = as.character(Sys.time()))))
-        cov = collapse_cov(cov, bin.size = pon.binsize, this.field = field)
-        cov.og = cov
+        suppressWarnings({ 
+          cov = gr.val(query = private$pon$get_template(), cov, val = field)
+          })
       }
-      
-      tumor.length <- cov %>%
-        gr2dt() %>%
-        dplyr::filter(seqnames != "Y") %>%
-        dt2gr() %>%
-        length()
       
       pon.length <- private$pon$get_template() %>%
         gr2dt() %>%
         dplyr::filter(seqnames != "Y") %>%
         dt2gr() %>%
         length()
-   
-        if (tumor.length != pon.length ) {
-          dt1 = data.table(chr = names(seqlengths(cov)), length_coverage = seqlengths(cov))
-          dt2 = data.table(chr = names(private$pon$get_seqlengths()), length_pon = private$pon$get_seqlengths())
-          dt_mismatch = merge(dt1, dt2, by = "chr")
-          dt_mismatch <- dt_mismatch[order(match(dt_mismatch$chr, c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
-                                                                    "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
-                                                                    "21", "22", "X", "Y")))]
-          dt_mismatch <- dt_mismatch %>%
-            filter(length_coverage != length_pon)
-          private$dt_mismatch = dt_mismatch
-          if(testing == FALSE){
-            stop("ERROR: Number of bins of coverage and PON does not match. Use get_mismatch() function to see mismatched chromosomes")
-          }
+      
+      if (length(cov) != pon.length & testing == FALSE) {
+        dt_mismatch = data.table(chr = c(), coverage = c(), pon = c())                                                                            
+        for(chr in c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "\
+X")){                                                                                                                                     
+          dt_mismatch <- rbind(dt_mismatch,                                                                                                       
+                               data.table(                                                                                                        
+                                 chr = chr,                                                                                                       
+                                 coverage = cov %>% gr2dt() %>% filter(seqnames == chr) %>% nrow(),                                               
+                                 pon = private$pon$get_template() %>% gr2dt() %>% filter(seqnames == chr) %>% nrow()                               
+                               ))                                                                                                                 
+        }                                                                                                                                         
+        dt_mismatch <- dt_mismatch %>% filter(coverage != pon)  
+        private$dt_mismatch = dt_mismatch
+        if(testing == FALSE){
+          stop("ERROR: Number of bins of coverage and PON does not match. Use get_mismatch() function to see mismatched chromosomes")
         }
-   
+      }
+      
       if(verbose == TRUE){
         message(paste0("Let's begin, this is whole exome/genome"))
       }
@@ -145,29 +132,27 @@ dryclean <- R6::R6Class("dryclean",
         stop("If germiline.filter is set to TRUE, pon must have a inf_germ element, see prepare_detergent for details")
       }
       
-      #all.chr = c(as.character(1:22), "X")
+      all.chr = c(as.character(1:22), "X")
       
       is.chr = FALSE
       
-      if (is.human){
-        if(any(grepl("chr", as.character(seqnames(cov))))){
-          cov = gr.sub(cov)
-          is.chr = TRUE
-        }
-        #cov = cov %Q% (seqnames %in% all.chr)
+      if(any(grepl("chr", as.character(seqnames(cov))))){
+        cov = gr.sub(cov)
+        is.chr = TRUE
       }
-  
+      
       local.all.chr = all.chr
       cov = cov %Q% (seqnames %in% local.all.chr)
       cov = cov[, field] %>% gr2dt() %>% setnames(., field, "signal")
       
+      cov <- cov %>% 
+        dplyr::mutate(signal = ifelse(is.na(signal), 0, signal)) %>%
+        dplyr::mutate(signal = ifelse(is.infinite(signal), NA, signal))
       
       if(centered == FALSE){
         message("Centering the sample")
         private$history <- rbindlist(list(private$history, data.table(action = paste("Mean-normalization of coverage"), date = as.character(Sys.time()))))
         cov <- cov %>% 
-          dplyr::mutate(signal = ifelse(is.na(signal), 0, signal)) %>%
-          dplyr::mutate(signal = ifelse(is.infinite(signal), NA, signal)) %>%
           dplyr::mutate(signal = signal / median(signal))
       }
       
@@ -176,13 +161,35 @@ dryclean <- R6::R6Class("dryclean",
       cov = sortSeqlevels(cov)
       cov = sort(cov)
       
-      if(use.blacklist == TRUE & is.na(blacklist_path)){
-        blacklist_path = system.file("extdata", "blacklist_A.rds", package = 'dryclean')
-        message(paste0("Applying the default mask to the coverage"))
-        private$history <- rbindlist(list(private$history, data.table(action = paste("Applying the defualt mask to coverage"), date = as.character(Sys.time()))))
+      if(use.blacklist == TRUE ){
+        if((is.na(blacklist_path) | blacklist_path == "NA")){
+          blacklist_path = system.file("extdata", "blacklist_A.rds", package = 'dryclean')
+          message(paste0("Applying the default mask to the coverage"))
+          private$history <- rbindlist(list(private$history, data.table(action = paste("Applying the defualt mask to coverage"), date = as.character(Sys.time()))))
+        }else{
+          blacklist_path = blacklist_path
+          message(paste0("Applying the provided mask to the coverage"))
+          private$history <- rbindlist(list(private$history, data.table(action = paste("Applying the provided mask to coverage"), date = as.character(Sys.time()))))
+        }
+        
+        suppressWarnings({ 
+          blacklist_pon <- gUtils::gr.val(query = private$pon$get_template(),
+                                          target = readRDS(blacklist_path),                                                                                               
+                                          val = "blacklisted",                                                                                                       
+                                          na.rm = TRUE)$blacklisted 
+          blacklist_pon <- ifelse(blacklist_pon == 1, TRUE, FALSE)
+          
+          
+          blacklist_cov <- gUtils::gr.val(query = cov,
+                                          target = readRDS(blacklist_path),                                                                                               
+                                          val = "blacklisted",                                                                                                       
+                                          na.rm = TRUE)$blacklisted                                                                                                  
+          blacklist_cov <- ifelse(blacklist_cov == 1, TRUE, FALSE)
+        })
+         
       }
       
-      m.vec = prep_cov(cov, blacklist = use.blacklist, blacklist_path = blacklist_path)
+      m.vec = prep_cov(cov, use.blacklist = use.blacklist, blacklist = blacklist_cov)
       
       m.vec = as.matrix(m.vec$signal)
       L.burnin = private$pon$get_L()
@@ -197,8 +204,7 @@ dryclean <- R6::R6Class("dryclean",
       }
       
       if (use.blacklist){
-        blacklisted <- readRDS(blacklist_path)$blacklisted
-        blacklisted <- !blacklisted
+        blacklisted <- !blacklist_pon
         L.burnin = L.burnin[blacklisted,]
         S.burnin = S.burnin[blacklisted,]
         U.hat = U.hat[blacklisted, ]
@@ -216,15 +222,10 @@ dryclean <- R6::R6Class("dryclean",
       cov[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
       
       if (use.blacklist){
+        cov_template <- cov
         cov[is.na(signal), signal := median.chr]
         cov[is.infinite(signal), signal := median.chr]
-        blacklist.pon =  gr2dt(readRDS(blacklist_path))
-        blacklist.pon <- blacklist.pon %>%
-          select(blacklisted, seqnames, start)
-        cov <- merge(cov, blacklist.pon, by = c("seqnames","start"))
-        #cov$blacklisted = blacklist.pon$blacklisted
-        cov[blacklisted == TRUE, signal := NA]
-        cov = na.omit(cov)
+        cov = cov[!blacklist_cov,]
       }
       
     
@@ -254,16 +255,30 @@ dryclean <- R6::R6Class("dryclean",
       }
       
       cov = dt2gr(cov)
+
+      if(use.blacklist){
+        cov_template = dt2gr(cov_template)
+        suppressWarnings({ 
+          cov <- gUtils::gr.val(query = cov_template,
+                                target = cov,                                                                                               
+                                val = c("background.log",
+                                        "foreground.log", 
+                                        "input.read.counts", 
+                                        "median.chr",
+                                        "foreground",
+                                        "background",
+                                        "log.reads"),                                                                                                       
+                                na.rm = TRUE)
+          })
+
+      }
       
       if (is.chr){
         cov = gr.chr(cov)
       }
       
-      #dt = data.table(cov.dc = cov, cov.dc.cbs = NULL)
-      
       private$history <- rbindlist(list(private$history, data.table(action = paste("Finished drycleaning the coverage file"), date = as.character(Sys.time()))))
     
-
       if(cbs == TRUE){
         
         message("Starting CBS on the drycleaned sample")
@@ -297,7 +312,6 @@ dryclean <- R6::R6Class("dryclean",
         out = gUtils::gr.fix(out, new.sl, drop = T)
         cat(length(out), ' segments produced\n')
         names(out) = NULL
-        #dt[, cov.dc.cbs := out]
         
         gc()
         
@@ -308,19 +322,6 @@ dryclean <- R6::R6Class("dryclean",
         private$history <- rbindlist(list(private$history, data.table(action = paste("Saved CBS output in current directory as cbs_output.rds"), date = as.character(Sys.time()))))
         
       }
-      
-      cov <- cov.og %>%
-        gr2dt() %>%                                                                                                                
-        select(seqnames, start,end,strand) %>%                                                                                     
-        arrange(seqnames, start) %>%                                                                                               
-        left_join(                                                                                                                 
-          gr2dt(cov),                                                                                                               
-          by = c("seqnames" = "seqnames", "start" = "start", "end" = "end", "strand" = "strand")                                   
-        ) %>% 
-        mutate(blacklisted = ifelse(is.na(blacklisted), TRUE, FALSE)) %>%
-        dt2gr() 
-      rm(cov.og)
-
       
       return(cov)
     },
