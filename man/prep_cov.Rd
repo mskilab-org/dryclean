@@ -4,7 +4,7 @@
 \alias{prep_cov}
 \title{function to prepare covearge data for decomposition}
 \usage{
-prep_cov(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA)
+prep_cov(m.vec = m.vec, use.blacklist = FALSE, blacklist = NA)
 }
 \arguments{
 \item{m.vec}{GRanges object. GRanges containing GC corrected reads as a cloumn in metadata}

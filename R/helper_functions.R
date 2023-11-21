@@ -238,7 +238,7 @@ wash_cycle <- function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat
 #' 
 #' @author Aditya Deshpande
 
-prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA){
+prep_cov <- function(m.vec = m.vec, use.blacklist = FALSE, blacklist = NA){
   m.vec = gr2dt(m.vec)
   m.vec = m.vec[, .(seqnames, signal)]
   m.vec[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
@@ -248,9 +248,8 @@ prep_cov <- function(m.vec = m.vec, blacklist = FALSE, burnin.samples.path = NA)
   m.vec[signal == 0, signal := min.cov]
   m.vec[signal < 0, signal := min.cov]
   
-  if (blacklist){
-    blacklist.pon =  readRDS(paste0(burnin.samples.path, "/blacklist.rds"))
-    m.vec$blacklisted = blacklist.pon$blacklisted
+  if (use.blacklist){
+    m.vec$blacklisted = blacklist
     m.vec[blacklisted == TRUE, signal := NA]
     m.vec = na.omit(m.vec)
   }
@@ -283,14 +282,6 @@ collapse_cov <- function(cov.gr, bin.size = target_resolution, this.field = fiel
   cov.gr = cov.gr[!is.infinite(signal), .(signal = median(signal, na.rm = TRUE)),
                   by = .(seqnames, start = floor(start/BINSIZE.ROUGH)*BINSIZE.ROUGH+1)]  
   cov.gr[, end := (start + BINSIZE.ROUGH) - 1]
-  s <- cov_og %>% group_by(seqnames) %>% summarize(end = max(end)) %>% data.table() %>% filter(end %% BINSIZE.ROUGH == 0) %>% select(seqnames)  
-  for (chr in s$seqnames){
-    cov_fixed <- cov.gr %>% filter(seqnames == chr) %>% select(seqnames, start, end, signal)
-    cov_fixed <- cov_fixed[nrow(cov_fixed)]
-    cov_fixed <- cov_fixed %>%
-      mutate(start = end + 1, end = end + BINSIZE.ROUGH)
-    cov.gr <- rbind(cov.gr,cov_fixed)
-  }
   setnames(cov.gr, "signal", this.field)
   cov.gr = dt2gr(cov.gr)
   return(cov.gr)

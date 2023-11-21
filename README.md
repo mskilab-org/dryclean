@@ -351,7 +351,7 @@ The parameters that can be used in clean() function:
     <tr>
       <td style="border: 1px solid black; padding: 5px;">cbs</td>
       <td style="border: 1px solid black; padding: 5px;">FALSE</td>
-      <td style="border: 1px solid black; padding: 5px;">Whether to perform cbs on the drycleaned coverage</td>
+      <td style="border: 1px solid black; padding: 5px;">Whether to perform cbs on the drycleaned coverage; If TRUE, saves CBS coverage as cbs_output.rds in output directory</td>
     </tr>
     <tr>
       <td style="border: 1px solid black; padding: 5px;">cnsignif</td>
@@ -366,7 +366,7 @@ The parameters that can be used in clean() function:
     <tr>
       <td style="border: 1px solid black; padding: 5px;">use.blacklist</td>
       <td style="border: 1px solid black; padding: 5px;">FALSE</td>
-      <td style="border: 1px solid black; padding: 5px;">Whether to exclude off-target markers in case of Exomes or targeted sequencing; If set to TRUE, needs a GRange marking if each marker is set to be excluded or not</td>
+      <td style="border: 1px solid black; padding: 5px;">Whether to exclude off-target markers in case of Exomes or targeted sequencing; If set to TRUE, it will use a defualt mask or needs a path to GRanges marking if each marker is set to be excluded or not as <code>blacklist_path</code> </td>
     </tr>
     <tr>
       <td style="border: 1px solid black; padding: 5px;">blacklist_path</td>
@@ -379,31 +379,16 @@ The parameters that can be used in clean() function:
       <td style="border: 1px solid black; padding: 5px;">Whether germline markers need to be removed from decomposition</td>
     </tr>
     <tr>
-      <td style="border: 1px solid black; padding: 5px;">germline.file</td>
-      <td style="border: 1px solid black; padding: 5px;">NA</td>
-      <td style="border: 1px solid black; padding: 5px;">Path to file with germline markers</td>
-    </tr>
-    <tr>
       <td style="border: 1px solid black; padding: 5px;">verbose</td>
       <td style="border: 1px solid black; padding: 5px;">TRUE</td>
       <td style="border: 1px solid black; padding: 5px;">Outputs progress</td>
-    </tr>
-    <tr>
-      <td style="border: 1px solid black; padding: 5px;">is.human</td>
-      <td style="border: 1px solid black; padding: 5px;">TRUE</td>
-      <td style="border: 1px solid black; padding: 5px;">Organism type</td>
-    </tr>
-    <tr>
-      <td style="border: 1px solid black; padding: 5px;">all.chr</td>
-      <td style="border: 1px solid black; padding: 5px;">c(as.character(1:22), "X")</td>
-      <td style="border: 1px solid black; padding: 5px;">List of chromosomes</td>
     </tr>
   </tbody>
 </table>
 
 <br>
 
-For 'dryclean' to work correctly, the lengths of each sequence on each chromosome in the coverage and PON (Panel of Normal) data must match. If you attempt to normalize the coverage with PON data of different sequence lengths, you will encounter an error. In the event of such an error, you can utilize the <code>get_mismatch()</code> method to obtain a data table of all chromosomes with mismatched lengths. Additionally, you can use the <code>get_history()</code> method to review all actions performed on the object with timestamps.
+For 'dryclean' to work correctly, the number of bins on each chromosome in the coverage and PON (Panel of Normal) data must match. If you attempt to normalize the coverage with PON data of different number of bins, you will encounter an error. In the event of such an error, you can utilize the <code>get_mismatch()</code> method to obtain a data table of all chromosomes with mismatched lengths. Additionally, you can use the <code>get_history()</code> method to review all actions performed on the object with timestamps.
 
 
 
@@ -532,20 +517,14 @@ Options:
 	-c CORES, --cores=CORES
 		number of cores to use
 
-	-w WHOLEGENOME, --wholeGenome=WHOLEGENOME
-		whether whole genome is being used
-
 	-b BLACKLIST, --blacklist=BLACKLIST
 		whether there are blacklisted makers
 
 	-l BLACKLIST_PATH, --blacklist_path=BLACKLIST_PATH
-		if --blacklist == TRUE, path to a GRanges object marking if each marker is set to be excluded or not
+		if --blacklist == TRUE, path to a GRanges object marking if each marker is set to be excluded or it willuse a default mask
 
 	-g GERMLINE.FILTER, --germline.filter=GERMLINE.FILTER
 		if PON based germline filter is to be used for removing some common germline events, if set to TRUE, give path to germline annotated file
-
-	-f GERMLINE.FILE, --germline.file=GERMLINE.FILE
-		path to file annotated with germline calls, if germline.filter == TRUE
 
 	-m HUMAN, --human=HUMAN
 		whther the samples under consideration are human
