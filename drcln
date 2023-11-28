@@ -35,9 +35,7 @@ if (!exists('opt'))
             make_option(c("-l", "--blacklist_path"), default = NA, type = "character", help = "if --blacklist == TRUE, path to a GRanges object marking if each marker is set to be excluded or not"),
             make_option(c("-g", "--germline.filter"), default = FALSE, type = "logical", help = "if PON based germline filter is to be used for removing some common germline events, if set to TRUE, give path to germline annotated file"),
             make_option(c("-f", "--germline.file"), default = NA, type = "character", help = "path to file annotated with germline calls, if germline.filter == TRUE"),
-            make_option(c("-m", "--human"), type = "logical", default = TRUE, help = "whther the samples under consideration are human"),
             make_option(c("-F", "--field"), type = "character", default = 'reads.corrected', help = "field name in GRanges metadata to use for drycleaning"),
-            make_option(c("-C", "--all.chr"), default = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, X", type = "character", help = "list of chromosomes to dryclean"),
             make_option(c("-B", "--build"), type = "character", default = 'hg19', help = "hg19/hg38 build for human samples"),
             make_option(c("-T", "--testing"), type = "character", default = FALSE, help = "DO NOT CHANGE"),
             make_option(c("--normal_vector"), type = "character", default = NULL, help = "if mode = 'pon', path to a vector containing normal coverages in GRanges format saved as .rds"),
@@ -105,20 +103,16 @@ suppressWarnings(suppressPackageStartupMessages(library(dryclean)))
                     dryclean_object <- dryclean$new(pon = pon_object)
         
         a <- dryclean_object$clean(
-            cov = opt$input, 
-            centered = opt$centered, 
-            cbs = opt$cbs, 
-            cnsignif = opt$cnsignif, 
-            mc.cores = opt$cores, 
-            verbose = TRUE, 
-            whole_genome = opt$wholeGenome, 
-            use.blacklist = opt$blacklist, 
-            blacklist_path = opt$blacklist_path, 
-            germline.filter = opt$germline.filter, 
-            germline.file = opt$germline.file, 
-            field = opt$field, 
-            is.human = opt$human, 
-            all.chr = strsplit(opt$all.chr,", ")[[1]],
+            cov = opt$input,
+            centered = opt$centered,
+            cbs = opt$cbs,
+            cnsignif = opt$cnsignif,
+            mc.cores = opt$cores,
+            verbose = TRUE,
+            use.blacklist = opt$blacklist,
+            blacklist_path = opt$blacklist_path,
+            germline.filter = opt$germline.filter,
+            field = opt$field,
             testing = opt$testing
           )
           
