@@ -560,26 +560,23 @@ pon <- R6::R6Class("pon",
                            reads[, signal := log(signal)]
                            reads = reads[, .(signal)]
                            if (!any(is.infinite(reads$signal))){
-                             reads = transpose(reads)
-                             return(reads)
+                             #reads = transpose(reads)
+                             return(reads$signal)
                            }
                          }
-                       }, all.chr, mc.cores = num.cores)
-                       gc()
-                       mat.bind = rbindlist(mat.n, fill = T)
-                       
-                       mat.bind.t = transpose(mat.bind)
-                       
-                       rm(mat.bind)
-                       gc()
-                       
+                       }, all.chr, mc.cores = num.cores, ignore.interactive = T)
+
                        if (verbose){
                          message("Starting decomposition")
                        }
                        
-                       mat.bind.t = as.matrix(mat.bind.t)
+
+                       mat.bind.t = matrix(unlist(mat.n), ncol = length(mat.n))
+                       print(nrow(mat.bind.t))
+                       print(ncol(mat.bind.t))
+                       rm(mat.n)
                        gc()
-                       
+
                        detergent = rrpca.mod(mat.bind.t, trace = F, tol = tolerance)
                        
                        rm(mat.bind.t)
