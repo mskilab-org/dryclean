@@ -79,6 +79,7 @@ dryclean <- R6::R6Class("dryclean",
       private$history <- rbindlist(list(private$history, data.table(action = paste("Loaded coverage from", cov), date = as.character(Sys.time()))))
       cov = readRDS(cov)
       cov <- cov %>% gr2dt() %>% filter(seqnames != 'Y') %>% dt2gr()
+      #cov <- cov %>% gr2dt() %>% filter(seqnames != 'X') %>% dt2gr()
       
       if(verbose == TRUE){
         message("Loading PON a.k.a detergent")
@@ -145,15 +146,15 @@ X")){
       cov = cov %Q% (seqnames %in% local.all.chr)
       cov = cov[, field] %>% gr2dt() %>% setnames(., field, "signal")
       
-      cov <- cov %>% 
-        dplyr::mutate(signal = ifelse(is.na(signal), 0, signal)) %>%
-        dplyr::mutate(signal = ifelse(is.infinite(signal), NA, signal))
       
       if(centered == FALSE){
         message("Centering the sample")
-        private$history <- rbindlist(list(private$history, data.table(action = paste("Mean-normalization of coverage"), date = as.character(Sys.time()))))
-        cov <- cov %>% 
-          dplyr::mutate(signal = signal / median(signal))
+        private$history <- rbindlist(list(private$history, data.table(action = paste("Median-normalization of coverage"), date = as.character(Sys.time()))))
+        cov[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
+        cov[is.na(signal), signal := median.chr]
+        #median = median(cov$signal)
+        cov[, signal := signal/median.chr]
+        cov <- cov[,!"median.chr"]
       }
       
       cov = cov %>% dt2gr()
@@ -189,6 +190,7 @@ X")){
          
       }
       
+      
       m.vec = prep_cov(cov, use.blacklist = use.blacklist, blacklist = blacklist_cov)
       
       m.vec = as.matrix(m.vec$signal)
@@ -198,6 +200,7 @@ X")){
       U.hat = private$pon$get_U_hat()
       V.hat = private$pon$get_V_hat()
       sigma.hat = private$pon$get_sigma_hat()
+      
       
       if(verbose == TRUE){
         message("Initializing wash cycle")
@@ -317,7 +320,8 @@ X")){
         
         private$history <- rbindlist(list(private$history, data.table(action = paste("Applied CBS correction to the drycleaned coverage file"), date = as.character(Sys.time()))))
         
-        saveRDS(out, "cbs_output.rds")
+        return(out)
+        #saveRDS(out, "cbs_output.rds")
         
         private$history <- rbindlist(list(private$history, data.table(action = paste("Saved CBS output in current directory as cbs_output.rds"), date = as.character(Sys.time()))))
         

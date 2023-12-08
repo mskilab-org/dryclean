@@ -239,14 +239,20 @@ wash_cycle <- function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat
 #' @author Aditya Deshpande
 
 prep_cov <- function(m.vec = m.vec, use.blacklist = FALSE, blacklist = NA){
+  
   m.vec = gr2dt(m.vec)
   m.vec = m.vec[, .(seqnames, signal)]
   m.vec[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
+  #return(m.vec)
   m.vec[is.na(signal), signal := median.chr]
+  
   min.cov = min(m.vec[signal > 0]$signal, na.rm = T)
+  
   m.vec[is.infinite(signal), signal := min.cov]
   m.vec[signal == 0, signal := min.cov]
   m.vec[signal < 0, signal := min.cov]
+  
+  
   
   if (use.blacklist){
     m.vec$blacklisted = blacklist
