@@ -150,14 +150,13 @@ X")){
       if(centered == FALSE){
         message("Centering the sample")
         private$history <- rbindlist(list(private$history, data.table(action = paste("Median-normalization of coverage"), date = as.character(Sys.time()))))
-        cov[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
-        cov[is.na(signal), signal := median.chr]
-        #median = median(cov$signal)
-        cov[, signal := signal/median.chr]
-        cov <- cov[,!"median.chr"]
+        cov = cov %>% dt2gr()
+        mcols(cov)[which(is.na(mcols(cov)[, "signal"])), "signal"] = 0
+        mcols(cov)[which(is.infinite(mcols(cov)[, "signal"])), "signal"] = NA
+        values(cov)[, "signal"] = values(cov)[, "signal"] / mean(values(cov)[, "signal"], na.rm = TRUE)
+      }else{
+        cov = cov %>% dt2gr()  
       }
-      
-      cov = cov %>% dt2gr()
       
       cov = sortSeqlevels(cov)
       cov = sort(cov)
@@ -320,8 +319,8 @@ X")){
         
         private$history <- rbindlist(list(private$history, data.table(action = paste("Applied CBS correction to the drycleaned coverage file"), date = as.character(Sys.time()))))
         
-        return(out)
-        #saveRDS(out, "cbs_output.rds")
+        #return(out)
+        saveRDS(out, "cbs_output.rds")
         
         private$history <- rbindlist(list(private$history, data.table(action = paste("Saved CBS output in current directory as cbs_output.rds"), date = as.character(Sys.time()))))
         
