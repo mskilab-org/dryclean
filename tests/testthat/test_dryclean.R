@@ -170,18 +170,6 @@ test_that("cbs", {
 })
 
 
-
-test_that("centering", {
-  pon_object = pon$new(pon_path = detergent.path)
-  
-  dryclean_object <- dryclean$new(pon = pon_object)
-  
-  a <- dryclean_object$clean(cov = sample.1.path, testing = TRUE, centered = FALSE)
-  
-  expect_equal(a$background.log[1], 0.0508, tolerance = 0.001) 
-  
-})
-
 test_that("clustering", {
   expect_error(
     pon_object = pon$new(

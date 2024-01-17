@@ -47,7 +47,7 @@ Function begins the online rPCA process. Use this function if you performed batc
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{dryclean$clean(
   cov,
-  centered = FALSE,
+  center = TRUE,
   cbs = FALSE,
   cnsignif = 1e-05,
   mc.cores = 1,
@@ -65,7 +65,7 @@ Function begins the online rPCA process. Use this function if you performed batc
 \describe{
 \item{\code{cov}}{character path to the granges coverage file to be drycleaned}
 
-\item{\code{centered}}{boolean (default == FALSE) whether a coverage has already been centered by by dividing each bin by global mean signal of the sample}
+\item{\code{center}}{boolean (default == TRUE) whether to center the coverage before drycleaning}
 
 \item{\code{cbs}}{boolean (default == FALSE) whether to perform cbs on the drycleaned coverage}
 

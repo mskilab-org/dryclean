@@ -320,7 +320,7 @@ The output has following metadata fields:
 <tr><td>4. median.chr: median chromosome signal</td></tr>
 <tr><td>5. foreground: Foreground signal, that forms SCNAs (S vector) in read count/ratio space</td></tr>
 <tr><td>6. background: This is the L low ranked vector after decomposition and represent the background noise separated by dryclean in read count/ratio space </td></tr>
-<tr><td>7. log.reads: log of the mean-normalized count</td></tr>
+<tr><td>7. log.reads: log of the median-normalized count</td></tr>
 </tbody>
 </table>
 
@@ -344,9 +344,9 @@ The parameters that can be used in clean() function:
       <td style="border: 1px solid black; padding: 5px;">Field name in GRanges metadata of coverage to use for drycleaning</td>
     </tr>
     <tr>
-      <td style="border: 1px solid black; padding: 5px;">centered</td>
-      <td style="border: 1px solid black; padding: 5px;">FALSE</td>
-      <td style="border: 1px solid black; padding: 5px;">Whether a coverage has already been mean-normalized</td>
+      <td style="border: 1px solid black; padding: 5px;">center</td>
+      <td style="border: 1px solid black; padding: 5px;">TRUE</td>
+      <td style="border: 1px solid black; padding: 5px;">Whether to center a coverage. If you used the Fragcounter to correct the coverage, set to <code>FALSE</code> as it has already been centered.</td>
     </tr>
     <tr>
       <td style="border: 1px solid black; padding: 5px;">cbs</td>
@@ -388,7 +388,13 @@ The parameters that can be used in clean() function:
 
 <br>
 
-For 'dryclean' to work correctly, the number of bins on each chromosome in the coverage and PON (Panel of Normal) data must match. If you attempt to normalize the coverage with PON data of different number of bins, you will encounter an error. In the event of such an error, you can utilize the <code>get_mismatch()</code> method to obtain a data table of all chromosomes with mismatched lengths. Additionally, you can use the <code>get_history()</code> method to review all actions performed on the object with timestamps.
+Prerequisites for 'dryclean' to work correctly:
+<ul>
+  <li>The number of bins on each chromosome in the coverage and PON (Panel of Normal) data must match. If you attempt to normalize the coverage with PON data of different number of bins, you will encounter an error. In the event of such an error, you can utilize the <code>get_mismatch()</code> method to obtain a data table of all chromosomes with mismatched lengths.</li>
+  <li>The coverage data has to be centered. If the coverage has not been centered, set <code>center=TRUE</code>. WARNING: If you used Fragcounter to correct the coverage, it has already been centered, therefore set <code>center=FALSE</code></li>
+</ul>
+
+Additionally, you can use the <code>get_history()</code> method to review all actions performed on the object with timestamps.
 
 
 
@@ -505,8 +511,8 @@ Options:
 	-i INPUT, --input=INPUT
 		path to the coverage file in GRanges format saved as .rds
 
-	-t CENTERED, --centered=CENTERED
-		are the samples centered
+	-t CENTER, --center=CENTER
+		whether to center the coverage before drycleaning
 
 	-s CBS, --cbs=CBS
 		whether to perform cbs on the drycleaned coverage

@@ -26,7 +26,7 @@ if (!exists('opt'))
             make_option(c("--mode"), type = "character", default = "coverage", help = "Mode of operation: 'pon' or 'coverage'. Set to 'pon' for PON generation and 'coverage' for normalizing a sample using existing PON"),
             make_option(c("-p", "--pon"), type = "character", default = NULL, help = "path to the existing Panel Of Normal (PON) saved as .rds"),
             make_option(c("-i", "--input"), type = "character", help = "path to the coverage file in GRanges format saved as .rds"),
-            make_option(c("-t", "--centered"), type = "logical", default = FALSE, help = "are the samples centered"),
+            make_option(c("-C", "--center"), type = "logical", default = TRUE, help = "whether to center the coverage before drycleaning"),
             make_option(c("-s", "--cbs"), type = "logical", default = FALSE, help = "whether to perform cbs on the drycleaned coverage"),
             make_option(c("-n", "--cnsignif"), type = "integer", default = 1e-5, help = "the significance levels for the test to accept change-points in cbs"),
             make_option(c("-c", "--cores"), type = "integer", default = 10,  help = "number of cores to use"),
@@ -104,7 +104,7 @@ suppressWarnings(suppressPackageStartupMessages(library(dryclean)))
         
         a <- dryclean_object$clean(
             cov = opt$input,
-            centered = opt$centered,
+            center = opt$center,
             cbs = opt$cbs,
             cnsignif = opt$cnsignif,
             mc.cores = opt$cores,
