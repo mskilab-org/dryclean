@@ -51,7 +51,7 @@ dryclean <- R6::R6Class("dryclean",
     #' 
     #' @param cov character path to the granges coverage file to be drycleaned
     #'
-    #' @param centered boolean (default == FALSE) whether a coverage has already been centered by by dividing each bin by global mean signal of the sample
+    #' @param center boolean (default == TRUE) whether to center the coverage before drycleaning
     #' 
     #' @param cbs boolean (default == FALSE) whether to perform cbs on the drycleaned coverage
     #' 
@@ -73,7 +73,7 @@ dryclean <- R6::R6Class("dryclean",
     #' 
     #' @return Drycleaned coverage in GRanges format
     
-    clean = function(cov, centered = FALSE, cbs = FALSE, cnsignif = 1e-5, mc.cores = 1, verbose = TRUE, use.blacklist = FALSE, blacklist_path = NA, germline.filter = FALSE, field = "reads.corrected", testing = FALSE){
+    clean = function(cov, center = TRUE, cbs = FALSE, cnsignif = 1e-5, mc.cores = 1, verbose = TRUE, use.blacklist = FALSE, blacklist_path = NA, germline.filter = FALSE, field = "reads.corrected", testing = FALSE){
       
       message("Loading coverage")
       private$history <- rbindlist(list(private$history, data.table(action = paste("Loaded coverage from", cov), date = as.character(Sys.time()))))
@@ -145,18 +145,17 @@ X")){
       local.all.chr = all.chr
       cov = cov %Q% (seqnames %in% local.all.chr)
       cov = cov[, field] %>% gr2dt() %>% setnames(., field, "signal")
+      cov = cov %>% dt2gr()
       
-      
-      if(centered == FALSE){
-        message("Centering the sample")
+      if(center == TRUE){
+        
+        message("Median-centering the sample")
         private$history <- rbindlist(list(private$history, data.table(action = paste("Median-normalization of coverage"), date = as.character(Sys.time()))))
-        cov = cov %>% dt2gr()
         mcols(cov)[which(is.na(mcols(cov)[, "signal"])), "signal"] = 0
         mcols(cov)[which(is.infinite(mcols(cov)[, "signal"])), "signal"] = NA
         values(cov)[, "signal"] = values(cov)[, "signal"] / mean(values(cov)[, "signal"], na.rm = TRUE)
-      }else{
-        cov = cov %>% dt2gr()  
-      }
+      }      
+      
       
       cov = sortSeqlevels(cov)
       cov = sort(cov)
@@ -263,7 +262,7 @@ X")){
         suppressWarnings({ 
           cov <- gUtils::gr.val(query = cov_template,
                                 target = cov,                                                                                               
-                                val = c("background.log",
+                                val =c("background.log",
                                         "foreground.log", 
                                         "input.read.counts", 
                                         "median.chr",
@@ -526,11 +525,13 @@ pon <- R6::R6Class("pon",
                        samp.final <- samp.final %>%
                          mutate(file.available = file.exists(normal_cov))
                        
+                       
                        message("Checking for existence of files")
                        
                        samp.final = samp.final[file.available == TRUE]
                        
                        message(paste0(nrow(samp.final), " files present"))
+                       
                        
                        mat.n = pbmcapply::pbmclapply(samp.final[, sample], function(nm, all.chr){
                          this.cov = tryCatch(readRDS(samp.final[sample == nm, normal_cov]), error = function(e) NULL)
@@ -575,8 +576,8 @@ pon <- R6::R6Class("pon",
                        
 
                        mat.bind.t = matrix(unlist(mat.n), ncol = length(mat.n))
-                       print(nrow(mat.bind.t))
-                       print(ncol(mat.bind.t))
+                       #print(nrow(mat.bind.t))
+                       #print(ncol(mat.bind.t))
                        rm(mat.n)
                        gc()
 
