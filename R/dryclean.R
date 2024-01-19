@@ -91,6 +91,13 @@ dryclean <- R6::R6Class("dryclean",
       tumor.binsize = median(gr2dt(cov)$width)
       pon.binsize = median(gr2dt(private$pon$get_template())$width)
       
+      is.chr = FALSE
+      
+      if(any(grepl("chr", as.character(seqnames(cov))))){
+        cov = gr.sub(cov)
+        is.chr = TRUE
+      }
+      
       if (tumor.binsize != pon.binsize & testing == FALSE){
         message(paste0("WARNING: Input tumor bin size = ", tumor.binsize,"bp. PON bin size = ", pon.binsize,"bp. Rebinning tumor to bin size of PON..."))
         private$history <- rbindlist(list(private$history, data.table(action = paste("Rebinning tumor to", pon.binsize, "bp bin size"), date = as.character(Sys.time()))))
@@ -119,7 +126,10 @@ X")){
         dt_mismatch <- dt_mismatch %>% filter(coverage != pon)  
         private$dt_mismatch = dt_mismatch
         if(testing == FALSE){
-          stop("ERROR: Number of bins of coverage and PON does not match. Use get_mismatch() function to see mismatched chromosomes")
+          message("WARNING: Number of bins of coverage and PON does not match. Use get_mismatch() function to see mismatched chromosomes\nAligning coverage to the PON")
+          suppressWarnings({ 
+            cov = gr.val(query = private$pon$get_template(), cov, val = field)
+          })
         }
       }
       
@@ -135,13 +145,6 @@ X")){
       
       all.chr = c(as.character(1:22), "X")
       
-      is.chr = FALSE
-      
-      if(any(grepl("chr", as.character(seqnames(cov))))){
-        cov = gr.sub(cov)
-        is.chr = TRUE
-      }
-      
       local.all.chr = all.chr
       cov = cov %Q% (seqnames %in% local.all.chr)
       cov = cov[, field] %>% gr2dt() %>% setnames(., field, "signal")
@@ -153,7 +156,7 @@ X")){
         private$history <- rbindlist(list(private$history, data.table(action = paste("Median-normalization of coverage"), date = as.character(Sys.time()))))
         mcols(cov)[which(is.na(mcols(cov)[, "signal"])), "signal"] = 0
         mcols(cov)[which(is.infinite(mcols(cov)[, "signal"])), "signal"] = NA
-        values(cov)[, "signal"] = values(cov)[, "signal"] / mean(values(cov)[, "signal"], na.rm = TRUE)
+        values(cov)[, "signal"] = values(cov)[, "signal"] / median(values(cov)[, "signal"], na.rm = TRUE)
       }      
       
       

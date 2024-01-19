@@ -395,6 +395,7 @@ normal_vector_example
     create_new_pon = TRUE, 
     normal_vector = normal_vector_example
     )</code></pre>
+<p><b>NOTE:</b> We recommend using raw reads from normal samples in PON generation for the most optimal performance.</p>
 <p>The parameters that could be used in PON generation:</p>
 <table style="border: 1px solid black; border-collapse: collapse;">
 <tbody>
@@ -877,86 +878,43 @@ center
 TRUE
 </td>
 <td style="border: 1px solid black; padding: 5px;">
-Whether to center a coverage. If you used the Fragcounter to correct the coverage, set to <code>FALSE</code> as it has already been centered.
-</td>
+Whether to center a coverage
 </tr>
-<tr>
-<td style="border: 1px solid black; padding: 5px;">
-cbs
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-FALSE
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-Whether to perform cbs on the drycleaned coverage; If TRUE, saves CBS coverage as cbs_output.rds in output directory
-</td>
-</tr>
-<tr>
-<td style="border: 1px solid black; padding: 5px;">
-cnsignif
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-1e-5
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-The significance levels for the tests in cbs to accept change-points
-</td>
-</tr>
-<tr>
-<td style="border: 1px solid black; padding: 5px;">
-mc.cores
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-1
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-Number of cores to use for parallelization
-</td>
-</tr>
-<tr>
-<td style="border: 1px solid black; padding: 5px;">
-use.blacklist
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-FALSE
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-Whether to exclude off-target markers in case of Exomes or targeted sequencing; If set to TRUE, it will use a defualt mask or needs a path to GRanges marking if each marker is set to be excluded or not as <code>blacklist_path</code>
-</td>
-</tr>
-<tr>
-<td style="border: 1px solid black; padding: 5px;">
-blacklist_path
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-NA
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-If use.blacklist == TRUE, path a GRanges object marking if each marker is set to be excluded or not
-</td>
-</tr>
-<tr>
-<td style="border: 1px solid black; padding: 5px;">
-germline.filter
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-FALSE
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-Whether germline markers need to be removed from decomposition
-</td>
-</tr>
-<tr>
-<td style="border: 1px solid black; padding: 5px;">
-verbose
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-TRUE
-</td>
-<td style="border: 1px solid black; padding: 5px;">
-Outputs progress
-</td>
-</tr>
+<pre><code>&lt;tr&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;cbs&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;FALSE&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;Whether to perform cbs on the drycleaned coverage; If TRUE, saves CBS coverage as cbs_output.rds in output directory&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;cnsignif&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;1e-5&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;The significance levels for the tests in cbs to accept change-points&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;mc.cores&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;1&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;Number of cores to use for parallelization&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;use.blacklist&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;FALSE&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;Whether to exclude off-target markers in case of Exomes or targeted sequencing; If set to TRUE, it will use a defualt mask or needs a path to GRanges marking if each marker is set to be excluded or not as &lt;code&gt;blacklist_path&lt;/code&gt; &lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;blacklist_path&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;NA&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;If use.blacklist == TRUE, path a GRanges object marking if each marker is set to be excluded or not&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;germline.filter&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;FALSE&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;Whether germline markers need to be removed from decomposition&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;verbose&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;TRUE&lt;/td&gt;
+  &lt;td style=&quot;border: 1px solid black; padding: 5px;&quot;&gt;Outputs progress&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
 </tbody>
 </table>
 <p><br></p>
@@ -966,7 +924,7 @@ Prerequisites for ‘dryclean’ to work correctly:
 The number of bins on each chromosome in the coverage and PON (Panel of Normal) data must match. If you attempt to normalize the coverage with PON data of different number of bins, you will encounter an error. In the event of such an error, you can utilize the <code>get_mismatch()</code> method to obtain a data table of all chromosomes with mismatched lengths.
 </li>
 <li>
-The coverage data has to be centered. If the coverage has not been centered, set <code>center=TRUE</code>. WARNING: If you used Fragcounter to correct the coverage, it has already been centered, therefore set <code>center=FALSE</code>
+The coverage data has to be centered. If the coverage has not been centered, set <code>center=TRUE</code>. NOTE: If you used Fragcounter to correct the coverage, it has already been centered.
 </li>
 </ul>
 <p>Additionally, you can use the <code>get_history()</code> method to review all actions performed on the object with timestamps.</p>
