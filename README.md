@@ -77,6 +77,7 @@ Option 2: Create a new PON from normal samples.
 
 To create a new PON, the vector with paths to the normal samples is needed.
 
+
 Following is an example of such a vector
 
 
@@ -97,6 +98,8 @@ pon_object = pon$new(
     normal_vector = normal_vector_example
     )
 ```
+
+<b>NOTE:</b> We recommend using raw reads from normal samples in PON generation for the most optimal performance.
 
 The parameters that could be used in PON generation:
 
@@ -346,7 +349,7 @@ The parameters that can be used in clean() function:
     <tr>
       <td style="border: 1px solid black; padding: 5px;">center</td>
       <td style="border: 1px solid black; padding: 5px;">TRUE</td>
-      <td style="border: 1px solid black; padding: 5px;">Whether to center a coverage. If you used the Fragcounter to correct the coverage, set to <code>FALSE</code> as it has already been centered.</td>
+      <td style="border: 1px solid black; padding: 5px;">Whether to center a coverage
     </tr>
     <tr>
       <td style="border: 1px solid black; padding: 5px;">cbs</td>
@@ -391,7 +394,7 @@ The parameters that can be used in clean() function:
 Prerequisites for 'dryclean' to work correctly:
 <ul>
   <li>The number of bins on each chromosome in the coverage and PON (Panel of Normal) data must match. If you attempt to normalize the coverage with PON data of different number of bins, you will encounter an error. In the event of such an error, you can utilize the <code>get_mismatch()</code> method to obtain a data table of all chromosomes with mismatched lengths.</li>
-  <li>The coverage data has to be centered. If the coverage has not been centered, set <code>center=TRUE</code>. WARNING: If you used Fragcounter to correct the coverage, it has already been centered, therefore set <code>center=FALSE</code></li>
+  <li>The coverage data has to be centered. If the coverage has not been centered, set <code>center=TRUE</code>. NOTE: If you used Fragcounter to correct the coverage, it has already been centered (set <code>center=FALSE</code>).</li>
 </ul>
 
 Additionally, you can use the <code>get_history()</code> method to review all actions performed on the object with timestamps.

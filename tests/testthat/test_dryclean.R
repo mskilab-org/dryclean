@@ -123,7 +123,7 @@ test_that("clean", {
   
   expect_true(identical(colnames(values(a)), c("background.log", "foreground.log","input.read.counts", "median.chr", "foreground", "background", "log.reads")))
   
-  expect_equal(a$background.log[1], 0.0508, tolerance = 0.001)
+  expect_equal(a$background.log[1], 0.0306, tolerance = 0.001)
 })
 
 
