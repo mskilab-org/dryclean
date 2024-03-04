@@ -73,11 +73,18 @@ dryclean <- R6::R6Class("dryclean",
     #' 
     #' @return Drycleaned coverage in GRanges format
     
-    clean = function(cov, center = TRUE, cbs = FALSE, cnsignif = 1e-5, mc.cores = 1, verbose = TRUE, use.blacklist = FALSE, blacklist_path = NA, germline.filter = FALSE, field = "reads.corrected", testing = FALSE){
+    clean = function(cov, center = TRUE, centering = "mean", cbs = FALSE, cnsignif = 1e-5, mc.cores = 1, verbose = TRUE, use.blacklist = FALSE, blacklist_path = NA, germline.filter = FALSE, field = "reads.corrected", testing = FALSE){
       
       message("Loading coverage")
       private$history <- rbindlist(list(private$history, data.table(action = paste("Loaded coverage from", cov), date = as.character(Sys.time()))))
       cov = readRDS(cov)
+      
+      is.chr = FALSE
+      if(any(grepl("chr", as.character(seqnames(cov))))){
+        cov = gr.sub(cov)
+        is.chr = TRUE
+      }
+      
       cov <- cov %>% gr2dt() %>% filter(seqnames != 'Y') %>% dt2gr()
       #cov <- cov %>% gr2dt() %>% filter(seqnames != 'X') %>% dt2gr()
       
@@ -90,13 +97,6 @@ dryclean <- R6::R6Class("dryclean",
         
       tumor.binsize = median(gr2dt(cov)$width)
       pon.binsize = median(gr2dt(private$pon$get_template())$width)
-      
-      is.chr = FALSE
-      
-      if(any(grepl("chr", as.character(seqnames(cov))))){
-        cov = gr.sub(cov)
-        is.chr = TRUE
-      }
       
       if (tumor.binsize != pon.binsize & testing == FALSE){
         message(paste0("WARNING: Input tumor bin size = ", tumor.binsize,"bp. PON bin size = ", pon.binsize,"bp. Rebinning tumor to bin size of PON..."))
@@ -152,11 +152,17 @@ X")){
       
       if(center == TRUE){
         
+        
         message("Median-centering the sample")
         private$history <- rbindlist(list(private$history, data.table(action = paste("Median-normalization of coverage"), date = as.character(Sys.time()))))
         mcols(cov)[which(is.na(mcols(cov)[, "signal"])), "signal"] = 0
         mcols(cov)[which(is.infinite(mcols(cov)[, "signal"])), "signal"] = NA
-        values(cov)[, "signal"] = values(cov)[, "signal"] / median(values(cov)[, "signal"], na.rm = TRUE)
+        if(centering == "mean"){
+          values(cov)[, "signal"] = values(cov)[, "signal"] / mean(values(cov)[, "signal"], na.rm = TRUE)
+        }
+        if(centering == "median"){
+          values(cov)[, "signal"] = values(cov)[, "signal"] / median(values(cov)[, "signal"], na.rm = TRUE)
+        }
       }      
       
       
@@ -194,6 +200,7 @@ X")){
       
       m.vec = prep_cov(cov, use.blacklist = use.blacklist, blacklist = blacklist_cov)
       
+      
       m.vec = as.matrix(m.vec$signal)
       L.burnin = private$pon$get_L()
       S.burnin = private$pon$get_S()
@@ -217,6 +224,7 @@ X")){
       decomposed = wash_cycle(m.vec = m.vec, L.burnin = L.burnin,
                               S.burnin = S.burnin, r = r, U.hat = U.hat,
                               V.hat = V.hat, sigma.hat = sigma.hat)
+      
       
       if (verbose == TRUE){
         message("Combining matrices with gRanges")
