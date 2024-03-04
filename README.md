@@ -568,6 +568,6 @@ Options:
 
 The Panel of Normal samples (PON) of 395 TCGA WGS normal samples was created using hierarchical clustering approach described above and filtered for CNPs.
 
-The file is 17G in size. 
+The file is 16G in size. 
 
-WGS 1 kb PON: https://mskilab.s3.amazonaws.com/hg19/WGS/detergent.rds
+WGS 1 kb PON: https://mskilab-pipeline.s3.amazonaws.com/dryclean/pon/hg19/fixed.detergent.rds
