@@ -114,8 +114,7 @@ dryclean <- R6::R6Class("dryclean",
       
       if (length(cov) != pon.length & testing == FALSE) {
         dt_mismatch = data.table(chr = c(), coverage = c(), pon = c())                                                                            
-        for(chr in c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "\
-X")){                                                                                                                                     
+        for(chr in c(1:22, "X")){                                                                                                                                     
           dt_mismatch <- rbind(dt_mismatch,                                                                                                       
                                data.table(                                                                                                        
                                  chr = chr,                                                                                                       
@@ -140,7 +139,7 @@ X")){
       private$history <- rbindlist(list(private$history, data.table(action = paste("Started drycleaning the coverage file"), date = as.character(Sys.time()))))
       
       if (germline.filter & is.null(private$pon$get_inf_germ())){
-        stop("If germiline.filter is set to TRUE, pon must have a inf_germ element, see prepare_detergent for details")
+        stop("If germline.filter is set to TRUE, pon must have a inf_germ element, see prepare_detergent for details")
       }
       
       all.chr = c(as.character(1:22), "X")
@@ -149,23 +148,6 @@ X")){
       cov = cov %Q% (seqnames %in% local.all.chr)
       cov = cov[, field] %>% gr2dt() %>% setnames(., field, "signal")
       cov = cov %>% dt2gr()
-      
-      if(center == TRUE){
-        
-        
-        message("Median-centering the sample")
-        private$history <- rbindlist(list(private$history, data.table(action = paste("Median-normalization of coverage"), date = as.character(Sys.time()))))
-        mcols(cov)[which(is.na(mcols(cov)[, "signal"])), "signal"] = 0
-        mcols(cov)[which(is.infinite(mcols(cov)[, "signal"])), "signal"] = NA
-        if(centering == "mean"){
-          values(cov)[, "signal"] = values(cov)[, "signal"] / mean(values(cov)[, "signal"], na.rm = TRUE)
-        }
-        if(centering == "median"){
-          values(cov)[, "signal"] = values(cov)[, "signal"] / median(values(cov)[, "signal"], na.rm = TRUE)
-        }
-      }      
-      
-      
       cov = sortSeqlevels(cov)
       cov = sort(cov)
       
@@ -196,12 +178,18 @@ X")){
         })
          
       }
+
+      message(paste0(centering, "-centering the sample"))
+      private$history <- rbindlist(list(private$history, data.table(action = paste0(centering, "normalization of coverage"), date = as.character(Sys.time()))))
+      
+      cov = prep_cov(cov,
+                       use.blacklist = use.blacklist,
+                       blacklist = blacklist_cov,
+                       center = center,
+                       centering = centering)
       
       
-      m.vec = prep_cov(cov, use.blacklist = use.blacklist, blacklist = blacklist_cov)
-      
-      
-      m.vec = as.matrix(m.vec$signal)
+      m.vec = as.matrix(cov$signal)
       L.burnin = private$pon$get_L()
       S.burnin = private$pon$get_S()
       r = private$pon$get_k()
@@ -231,8 +219,7 @@ X")){
       }
       
       cov = gr2dt(cov)
-      cov[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
-      
+     
       if (use.blacklist){
         cov_template <- cov
         cov[is.na(signal), signal := median.chr]
@@ -240,23 +227,31 @@ X")){
         cov = cov[!blacklist_cov,]
       }
       
-    
-      setnames(cov, "signal", "input.read.counts")
+      #' retain input counts in input.read.counts field
+      setnames(cov, "og.signal", "input.read.counts")
+      
+      #' append foreground and fix 0/NA values
       cov = cbind(decomposed[[2]], cov)
       colnames(cov)[1] = 'foreground.log'
       cov[is.na(input.read.counts), foreground.log := NA]
-      cov[, foreground := exp(foreground.log)]
+      cov[, foreground := exp(foreground.log) * center.all]
       cov[input.read.counts == 0, foreground := 0]
       cov[is.na(input.read.counts), foreground := NA]
+
+      #' append background and fix 0/NA values
       cov = cbind(decomposed[[1]], cov)
       colnames(cov)[1] = 'background.log'
       cov[is.na(input.read.counts), background.log := NA]
-      cov[, background := exp(background.log) ]
+      cov[, background := exp(background.log) * center.all]
       cov[input.read.counts == 0, background := 0]
       cov[is.na(input.read.counts), background := NA]
+      
       cov[, log.reads := log(input.read.counts)]
       cov[is.infinite(log.reads), log.reads := NA]
-      
+
+      scaling.factor <- sum(cov$input.read.counts) / sum(cov$foreground)
+      cov$foreground <- cov$foreground * scaling.factor
+      cov$background <- cov$background * scaling.factor
       
       if (germline.filter){
         germ.file = private$pon$get_inf_germ()
@@ -265,7 +260,8 @@ X")){
         cov[germline.status == TRUE, foreground.log := NA]
         cov = na.omit(cov)
       }
-      
+
+      #browser()
       cov = dt2gr(cov)
 
       if(use.blacklist){

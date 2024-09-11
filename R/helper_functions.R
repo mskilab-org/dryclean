@@ -223,27 +223,43 @@ wash_cycle <- function(m.vec, L.burnin, S.burnin , r, N, U.hat, V.hat, sigma.hat
 ##############################
 #' @name prep_cov
 #'
-#' @title function to prepare covearge data for decomposition 
+#' @title function to prepare covearge data for decomposition and perform normalization
 #' @description prepares the GC corrected coverage data for decomposition
 #' 
 #' @keywords internal
 #' 
-#' @param m.vec GRanges object. GRanges containing GC corrected reads as a cloumn in metadata
+#' @param m.vec GRanges object. GRanges containing GC corrected reads as a column in metadata
 #' 
 #' @param blacklist, boolean (default == FALSE). Whether to exclude off-target markers in case of Exomes or targeted sequqnecing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not.
 #'
 #' @param burnin.samples.path, character (default = NA). Path to balcklist markers file
 #'
+#' @param center, character (default == FALSE). Transform the data to centered?
+#'
+#' @param centering, enum of "mean" or "median" ONLY (default = "mean"). Paradigm of centering.
+#'
 #' @return vector of length m with processed coverage data
 #' 
-#' @author Aditya Deshpande
+#' @author Aditya Deshpande / Johnathan Rafailov
 
-prep_cov <- function(m.vec = m.vec, use.blacklist = FALSE, blacklist = NA){
+prep_cov <- function(m.vec = m.vec, use.blacklist = FALSE, blacklist = NA, center = FALSE, centering = "mean"){
+
+  mcols(m.vec)$signal[ which(is.na(mcols(m.vec)$signal)) ] <- 0
+  mcols(m.vec)$signal[ which(is.infinite(mcols(m.vec)$signal)) ] <- NA
+  mcols(m.vec)$og.signal <- mcols(m.vec)$signal
+
+  if(center == T){
+    if(centering == "mean"){
+      m.vec$center.all <- mean(m.vec$signal, na.rm = T)
+    } else {
+      m.vec$center.all <- median(m.vec$signal, na.rm = T)
+    }
+    m.vec$signal <- m.vec$signal / m.vec$center.all 
+  }
   
   m.vec = gr2dt(m.vec)
-  m.vec = m.vec[, .(seqnames, signal)]
+  #m.vec = m.vec[, .(seqnames, start, end, og.signal, signal)]
   m.vec[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
-  #return(m.vec)
   m.vec[is.na(signal), signal := median.chr]
   
   min.cov = min(m.vec[signal > 0]$signal, na.rm = T)
@@ -262,22 +278,8 @@ prep_cov <- function(m.vec = m.vec, use.blacklist = FALSE, blacklist = NA){
   
   m.vec[, signal := log(signal)]
   
-  return(m.vec)
+  return(dt2gr(m.vec))
 }
-
-
-# collapse_cov <- function(cov.gr, bin.size = target_resolution, this.field = field){
-#   BINSIZE.ROUGH = bin.size
-#   cov.gr = cov.gr[, this.field]
-#   cov.gr = gr2dt(cov.gr)
-#   setnames(cov.gr, this.field, "signal")
-#   cov.gr = cov.gr[!is.infinite(signal), .(signal = median(signal, na.rm = TRUE)),
-#                   by = .(seqnames, start = floor(start/BINSIZE.ROUGH)*BINSIZE.ROUGH+1)]
-#   cov.gr[, end := (start + BINSIZE.ROUGH) - 1]
-#   setnames(cov.gr, "signal", this.field)
-#   cov.gr = dt2gr(cov.gr)
-#   return(cov.gr)
-# }
 
 collapse_cov <- function(cov.gr, bin.size = target_resolution, this.field = field){
   BINSIZE.ROUGH = bin.size
@@ -292,8 +294,6 @@ collapse_cov <- function(cov.gr, bin.size = target_resolution, this.field = fiel
   cov.gr = dt2gr(cov.gr)
   return(cov.gr)
 }
-
-
 
 generate_template <- function(cov, wgs = wgs, target_resolution = target_resolution, this.field = field, nochr = TRUE, all.chr = c(as.character(1:22), "X")){
   if (wgs){
