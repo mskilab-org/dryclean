@@ -249,7 +249,7 @@ dryclean <- R6::R6Class("dryclean",
       cov[, log.reads := log(input.read.counts)]
       cov[is.infinite(log.reads), log.reads := NA]
 
-      scaling.factor <- sum(cov$input.read.counts) / sum(cov$foreground + cov$background)
+      scaling.factor <- sum(cov$input.read.counts) / sum(cov$foreground)
       cov$foreground <- cov$foreground * scaling.factor
       cov$background <- cov$background * scaling.factor
       
