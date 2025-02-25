@@ -6,9 +6,6 @@
 \description{
 pon R6 class storing PON (panel of normals) necessary for "drycleaning"
 }
-\details{
-Add more details
-}
 \author{
 Aditya Deshpande <asd3002@med.cornell.edu>, Sebastian Brylka <sebastian.brylka@nyulangone.org>
 }
@@ -82,7 +79,7 @@ Initialize PON object. Authors: Aditya Deshpande, Sebastian Brylka
 
 \item{\code{choose.by.clustering}}{boolean (default == FALSE) clusters normal samples based on the genomic background and takes a random sample from within the clusters}
 
-\item{\code{number.of.samples}}{interger (default == 50) if choose.by.clustering == TRUE, this is the number of clusters at which to cut tree}
+\item{\code{number.of.samples}}{integer (default == 50) if choose.by.clustering == TRUE, this is the number of clusters at which to cut tree}
 
 \item{\code{verbose}}{boolean (default == TRUE) outputs progress}
 

@@ -2,14 +2,24 @@
 % Please edit documentation in R/helper_functions.R
 \name{prep_cov}
 \alias{prep_cov}
-\title{function to prepare covearge data for decomposition}
+\title{function to prepare covearge data for decomposition and perform normalization}
 \usage{
-prep_cov(m.vec = m.vec, use.blacklist = FALSE, blacklist = NA)
+prep_cov(
+  m.vec = m.vec,
+  use.blacklist = FALSE,
+  blacklist = NA,
+  center = FALSE,
+  centering = "mean"
+)
 }
 \arguments{
-\item{m.vec}{GRanges object. GRanges containing GC corrected reads as a cloumn in metadata}
+\item{m.vec}{GRanges object. GRanges containing GC corrected reads as a column in metadata}
 
 \item{blacklist, }{boolean (default == FALSE). Whether to exclude off-target markers in case of Exomes or targeted sequqnecing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not.}
+
+\item{center, }{character (default == FALSE). Transform the data to centered?}
+
+\item{centering, }{enum of "mean" or "median" ONLY (default = "mean"). Paradigm of centering.}
 
 \item{burnin.samples.path, }{character (default = NA). Path to balcklist markers file}
 }
@@ -20,6 +30,6 @@ vector of length m with processed coverage data
 prepares the GC corrected coverage data for decomposition
 }
 \author{
-Aditya Deshpande
+Aditya Deshpande / Johnathan Rafailov
 }
 \keyword{internal}

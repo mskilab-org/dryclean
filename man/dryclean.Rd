@@ -48,6 +48,7 @@ Function begins the online rPCA process. Use this function if you performed batc
 \if{html}{\out{<div class="r">}}\preformatted{dryclean$clean(
   cov,
   center = TRUE,
+  centering = "mean",
   cbs = FALSE,
   cnsignif = 1e-05,
   mc.cores = 1,
@@ -67,11 +68,13 @@ Function begins the online rPCA process. Use this function if you performed batc
 
 \item{\code{center}}{boolean (default == TRUE) whether to center the coverage before drycleaning}
 
+\item{\code{centering}}{character (default == "mean") method for centering the coverage}
+
 \item{\code{cbs}}{boolean (default == FALSE) whether to perform cbs on the drycleaned coverage}
 
 \item{\code{cnsignif}}{integer (default = 1e-5) the significance levels for the tests in cbs to accept change-points}
 
-\item{\code{mc.cores}}{interger (default == 1) number of cores to use for parallelization}
+\item{\code{mc.cores}}{integer (default == 1) number of cores to use for parallelization}
 
 \item{\code{verbose}}{boolean (default == TRUE) outputs progress}
 
@@ -93,6 +96,9 @@ The function begins the online rPCA process. It is the wrapper that takes in GRa
 
 \subsection{Returns}{
 Drycleaned coverage in GRanges format
+retain input counts in input.read.counts field
+append foreground and fix 0/NA values
+append background and fix 0/NA values
 }
 }
 \if{html}{\out{<hr>}}
