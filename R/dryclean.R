@@ -32,7 +32,7 @@ dryclean <- R6::R6Class("dryclean",
   ),
   public = list(
 
-    #' @name initialize
+    #' @method initialize() initialize()
     #' @description Initialize dryclean object. Authors: Aditya Deshpande, Sebastian Brylka
     #'
     #' @param pon PON object
@@ -44,16 +44,15 @@ dryclean <- R6::R6Class("dryclean",
       private$pon <- pon
     },
 
-    #' @name clean
+    #' @method clean()
     #' @description Function begins the online rPCA process. Use this function if you performed batch rPCA on samples as whole without dividing into chromosomes. For exomes and whole genomes where number of normal samples are small (<=100). Author: Aditya Deshpande
     #' @details The function begins the online rPCA process. It is the wrapper that takes in GRanges and outputs GRanges with decomposition
     #'
     #' @param cov character path to the granges coverage file to be drycleaned
     #' @param center boolean (default == TRUE) whether to center the coverage before drycleaning
-    #' @param centering character (default == "mean") method for centering the coverage
     #' @param cbs boolean (default == FALSE) whether to perform cbs on the drycleaned coverage
     #' @param cnsignif integer (default = 1e-5) the significance levels for the tests in cbs to accept change-points
-    #' @param mc.cores integer (default == 1) number of cores to use for parallelization
+    #' @param mc.cores interger (default == 1) number of cores to use for parallelization
     #' @param use.blacklist boolean (default = FALSE) whether to exclude off-target markers in case of Exomes or targeted sequencing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not or will use a default mask
     #' @param blacklist_path character (default = NA) if use.blacklist == TRUE, path a GRanges object marking if each marker is set to be excluded or not
     #' @param germline.filter boolean (default == FALSE) if germline markers need to be removed from decomposition
@@ -250,8 +249,10 @@ dryclean <- R6::R6Class("dryclean",
       cov[is.infinite(log.reads), log.reads := NA]
 
       scaling.factor <- sum(cov$input.read.counts) / sum(cov$foreground)
-      cov$foreground <- cov$foreground * scaling.factor
+      cov$foreground <- cov$foreground * scaling.factor ## returns in rescaled binned coverage
       cov$background <- cov$background * scaling.factor
+
+      ### cov$foreground <- cov$foreground * 2 * 151 / width(cov) ## returns in average coverage per base
 
       if (germline.filter) {
         germ.file <- private$pon$get_inf_germ()
@@ -345,17 +346,17 @@ dryclean <- R6::R6Class("dryclean",
     },
 
 
-    #' @name get_history
+    #' @method get_history() get_history()
     #' @description Function returns the history of the dryclean object
     #'
     #' @return Prints the history of the dryclean object as data table
     get_history = function() {
-      for (i in seq_len(nrow(private$history))) {
+      for (i in 1:nrow(private$history)) {
         cat(paste0(private$history$date[i], "\t", private$history$action[i], "\n"))
       }
     },
 
-    #' @name get_mismatch
+    #' @method get_mismatch() get_mismatch()
     #' @description Function returns the data table with mismatching in seqlengths between pon and coverage
     #'
     #' @return Returns the data table with mismatching chromosomes of pon and coverage
@@ -371,6 +372,7 @@ dryclean <- R6::R6Class("dryclean",
 #' @name pon
 #' @title pon
 #' @description pon R6 class storing PON (panel of normals) necessary for "drycleaning"
+#' @details Add more details
 #'
 #' @export
 #'
@@ -666,7 +668,7 @@ pon <- R6::R6Class("pon",
   public = list(
 
 
-    #' @name initialize
+    #' @method initialize() initialize()
     #' @description Initialize PON object. Authors: Aditya Deshpande, Sebastian Brylka
     #'
     #' @param normal_vector character (default == c()) vector of paths to normal samples
@@ -685,7 +687,7 @@ pon <- R6::R6Class("pon",
     #'
     #' @param choose.by.clustering boolean (default == FALSE) clusters normal samples based on the genomic background and takes a random sample from within the clusters
     #'
-    #' @param number.of.samples integer (default == 50) if choose.by.clustering == TRUE, this is the number of clusters at which to cut tree
+    #' @param number.of.samples interger (default == 50) if choose.by.clustering == TRUE, this is the number of clusters at which to cut tree
     #'
     #' @param tolerance numeric (default == 0.0001) tolerance for error for batch rPCA. We suggest keeping this value
     #'
@@ -767,17 +769,17 @@ pon <- R6::R6Class("pon",
       message("PON loaded")
     },
 
-    #' @name get_history
+    #' @method get_history() get_history()
     #' @description Function returns the history of the pon object
     #'
     #' @return Prints the history of the pon object as data table
     get_history = function() {
-      for (i in seq_len(nrow(private$history))) {
+      for (i in 1:nrow(private$history)) {
         cat(paste0(private$history$date[i], "\t", private$history$action[i], "\n"))
       }
     },
 
-    #' @name get_template
+    #' @method get_template() get_template()
     #' @description Function returns the template of the pon object
     #'
     #' @return Template of the pon object
@@ -785,7 +787,7 @@ pon <- R6::R6Class("pon",
       return(private$template)
     },
 
-    #' @name get_L
+    #' @method get_L() get_L()
     #' @description Function returns the L matrix of the pon object
     #'
     #' @return L matrix of the pon object
@@ -793,7 +795,7 @@ pon <- R6::R6Class("pon",
       return(private$L)
     },
 
-    #' @name get_S
+    #' @method get_S() get_S()
     #' @description Function returns the S matrix of the pon object
     #'
     #' @return S matrix of the pon object
@@ -801,7 +803,7 @@ pon <- R6::R6Class("pon",
       return(private$S)
     },
 
-    #' @name get_err
+    #' @method get_err() get_err()
     #' @description Function returns the err matrix of the pon object
     #'
     #' @return err matrix of the pon object
@@ -809,7 +811,7 @@ pon <- R6::R6Class("pon",
       return(private$err)
     },
 
-    #' @name get_k
+    #' @method get_k() get_k()
     #' @description Function returns the k matrix of the pon object
     #'
     #' @return k matrix of the pon object
@@ -817,7 +819,7 @@ pon <- R6::R6Class("pon",
       return(private$k)
     },
 
-    #' @name get_U_hat
+    #' @method get_U_hat() get_U_hat()
     #' @description Function returns the U_hat matrix of the pon object
     #'
     #' @return U_hat matrix of the pon object
@@ -825,7 +827,7 @@ pon <- R6::R6Class("pon",
       return(private$U.hat)
     },
 
-    #' @name get_V_hat
+    #' @method get_V_hat() get_V_hat()
     #' @description Function returns the V_hat matrix of the pon object
     #'
     #' @return V_hat matrix of the pon object
@@ -833,7 +835,7 @@ pon <- R6::R6Class("pon",
       return(private$V.hat)
     },
 
-    #' @name get_sigma_hat
+    #' @method get_sigma_hat() get_sigma_hat()
     #' @description Function returns the sigma_hat matrix of the pon object
     #'
     #' @return sigma_hat matrix of the pon object
@@ -841,7 +843,7 @@ pon <- R6::R6Class("pon",
       return(private$sigma.hat)
     },
 
-    #' @name get_inf_germ
+    #' @method get_inf_germ() get_inf_germ()
     #' @description Function returns the inf_germ matrix of the pon object
     #'
     #' @return inf_germ matrix of the pon object
@@ -849,7 +851,7 @@ pon <- R6::R6Class("pon",
       return(private$inf.germ)
     },
 
-    #' @name get_seqlengths
+    #' @method get_seqlengths() get_seqlengths()
     #' @description Function returns the seqlengths of the template of pon object
     #'
     #' @return seqlengths of template of the pon object
