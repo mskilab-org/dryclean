@@ -59,7 +59,7 @@ Initialize PON object. Authors: Aditya Deshpande, Sebastian Brylka
   wgs = TRUE,
   target_resolution = 1000,
   nochr = TRUE,
-  all.chr = c(as.character(1:22), "X")
+  all.chr = c(as.character(1:22), "X", "Y")
 )}\if{html}{\out{</div>}}
 }
 

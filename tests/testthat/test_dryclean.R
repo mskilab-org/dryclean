@@ -32,8 +32,8 @@ test_that("prep_cov", {
   sample.1 = readRDS(sample.1.path)
   sample.1 = sample.1[, field] %>% gr2dt() %>% setnames(., field, "signal") %>% dt2gr()
   pcov = prep_cov(m.vec = sample.1)
-  expect_identical(class(pcov)[1], "data.table")
-  expect_equal(dim(pcov)[1], 50)
+  expect_identical(class(pcov)[1], "GRanges")
+  expect_equal(length(pcov)[1], 50)
 })
 
 
@@ -120,10 +120,9 @@ test_that("clean", {
   dryclean_object <- dryclean$new(pon = pon_object)
   
   a <- dryclean_object$clean(cov = sample.1.path, testing = TRUE)
+  expect_true(identical(colnames(values(a)), c("background.log", "foreground.log", "signal", "input.read.counts", "center.all", "median.chr", "foreground", "background", "log.reads")))
   
-  expect_true(identical(colnames(values(a)), c("background.log", "foreground.log","input.read.counts", "median.chr", "foreground", "background", "log.reads")))
-  
-  expect_equal(a$background.log[1], 0.0306, tolerance = 0.001)
+  expect_equal(a$background.log[1], 0.0508, tolerance = 0.001)
 })
 
 

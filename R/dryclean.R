@@ -71,10 +71,10 @@ dryclean <- R6::R6Class("dryclean",
         is.chr <- TRUE
       }
 
-      cov <- cov %>%
-        gr2dt() %>%
-        filter(seqnames != "Y") %>%
-        dt2gr()
+      # cov <- cov %>%
+      #   gr2dt() %>%
+      #   ## filter(seqnames != "Y") %>%
+      #   dt2gr()
       # cov <- cov %>% gr2dt() %>% filter(seqnames != 'X') %>% dt2gr()
 
       if (verbose == TRUE) {
@@ -95,15 +95,15 @@ dryclean <- R6::R6Class("dryclean",
         })
       }
 
-      pon.length <- private$pon$get_template() %>%
-        gr2dt() %>%
-        dplyr::filter(seqnames != "Y") %>%
-        dt2gr() %>%
-        length()
+      pon.length <- private$pon$get_template() %>% length()
+        # gr2dt() %>%
+        # ## dplyr::filter(seqnames != "Y") %>%
+        # dt2gr() %>%
+        
 
       if (length(cov) != pon.length & testing == FALSE) {
         dt_mismatch <- data.table(chr = c(), coverage = c(), pon = c())
-        for (chr in c(1:22, "X")) {
+        for (chr in c(1:22, "X", "Y")) {
           dt_mismatch <- rbind(
             dt_mismatch,
             data.table(
@@ -126,14 +126,14 @@ dryclean <- R6::R6Class("dryclean",
       if (verbose == TRUE) {
         message(paste0("Let's begin, this is whole exome/genome"))
       }
-
+      
       private$history <- rbindlist(list(private$history, data.table(action = paste("Started drycleaning the coverage file"), date = as.character(Sys.time()))))
 
       if (germline.filter & is.null(private$pon$get_inf_germ())) {
         stop("If germline.filter is set to TRUE, pon must have a inf_germ element, see prepare_detergent for details")
       }
 
-      all.chr <- c(as.character(1:22), "X")
+      all.chr <- c(as.character(1:22), "X", "Y")
 
       local.all.chr <- all.chr
       cov <- cov %Q% (seqnames %in% local.all.chr)
@@ -184,7 +184,7 @@ dryclean <- R6::R6Class("dryclean",
         center = center,
         centering = centering
       )
-
+      
 
       m.vec <- as.matrix(cov$signal)
       L.burnin <- private$pon$get_L()
@@ -247,8 +247,8 @@ dryclean <- R6::R6Class("dryclean",
 
       cov[, log.reads := log(input.read.counts)]
       cov[is.infinite(log.reads), log.reads := NA]
-
-      scaling.factor <- sum(cov$input.read.counts) / sum(cov$foreground)
+      
+      scaling.factor <- sum(cov$input.read.counts, na.rm = T) / sum(cov$foreground, na.rm = T)
       cov$foreground <- cov$foreground * scaling.factor ## returns in rescaled binned coverage
       cov$background <- cov$background * scaling.factor
 
@@ -573,9 +573,10 @@ pon <- R6::R6Class("pon",
             this.cov$mt <- suppressWarnings(gr.match(dt2gr(this.cov), par.gr))
             this.cov[, median.idx := ifelse(is.na(mt), median.idx, mt + 24)]
             this.cov[, median.chr := median(signal.org, na.rm = T), by = median.idx]
-            this.cov[, signal := ifelse(seqnames != "X", signal.org,
+            this.cov[, signal := ifelse(!(seqnames %in% c("X", "Y")), signal.org,
               ifelse(median.chr == 0, 1, signal.org / median.chr)
-            )]
+              )]
+            this.cov[, signal := ifelse(is.na(median.chr), 1, signal)]
           } else {
             this.cov[, signal := signal.org]
             this.cov[, median.chr := median(signal.org, na.rm = T)]
@@ -716,7 +717,7 @@ pon <- R6::R6Class("pon",
     #' @param nochr logical (default = TRUE) remove chr prefix
     #'
     #' @param all.chr list (default = c(as.character(1:22), "X")) list of chromosomes
-    initialize = function(normal_vector = c(), pon_path = NULL, create_new_pon = FALSE, save_pon = FALSE, field = "reads.corrected", use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", PAR.file = NULL, balance = TRUE, infer.germline = FALSE, signal.thresh = 0.3, pct.thresh = 0.80, wgs = TRUE, target_resolution = 1000, nochr = TRUE, all.chr = c(as.character(1:22), "X")) {
+    initialize = function(normal_vector = c(), pon_path = NULL, create_new_pon = FALSE, save_pon = FALSE, field = "reads.corrected", use.all = TRUE, choose.randomly = FALSE, choose.by.clustering = FALSE, number.of.samples = 50, verbose = TRUE, num.cores = 1, tolerance = 0.0001, is.human = TRUE, build = "hg19", PAR.file = NULL, balance = TRUE, infer.germline = FALSE, signal.thresh = 0.3, pct.thresh = 0.80, wgs = TRUE, target_resolution = 1000, nochr = TRUE, all.chr = c(as.character(1:22), "X", "Y")) {
       message("Loading PON...")
 
       private$history <- data.table(action = character(), date = character())

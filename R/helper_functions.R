@@ -235,7 +235,6 @@ wash_cycle <- function(m.vec, L.burnin, S.burnin, r, N, U.hat, V.hat, sigma.hat,
 #' @author Aditya Deshpande / Johnathan Rafailov
 
 prep_cov <- function(m.vec = m.vec, use.blacklist = FALSE, blacklist = NA, center = FALSE, centering = "mean") {
-  mcols(m.vec)$signal[which(is.na(mcols(m.vec)$signal))] <- 0
   mcols(m.vec)$signal[which(is.infinite(mcols(m.vec)$signal))] <- NA
   mcols(m.vec)$og.signal <- mcols(m.vec)$signal
 
