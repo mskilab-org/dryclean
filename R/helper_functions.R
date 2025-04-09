@@ -287,7 +287,7 @@ collapse_cov <- function(cov.gr, bin.size = target_resolution, this.field = fiel
   return(cov.gr)
 }
 
-generate_template <- function(cov, wgs = wgs, target_resolution = target_resolution, this.field = field, nochr = TRUE, all.chr = c(as.character(1:22), "X")) {
+generate_template <- function(cov, wgs = wgs, target_resolution = target_resolution, this.field = field, nochr = TRUE, all.chr = c(as.character(1:22), "X", "Y")) {
   if (wgs) {
     inferred_resolution <- median(width(cov), na.rm = T)
     if (target_resolution > inferred_resolution) {
