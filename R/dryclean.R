@@ -13,33 +13,42 @@
 #' @name dryclean
 #' @title dryclean
 #' @description dryclean R6 class storing all methods and values necessary for "drycleaning"
-#' @details Add more details
+#' @detals Add more details
 #'
 #' @param pon PON object
 #' @param history data.table to store history of dryclean object
 #' @param dt_mismatch data.table to store mismatching chromosomes between coverage and PON
+#' @param log_action function to log actions performed on the dryclean object
 #'
 #' @export
 #'
-#' @author Aditya Deshpande <asd3002@med.cornell.edu>, Sebastian Brylka <sebastian.brylka@nyulangone.org>
+#' @author Aditya Deshpande <adeshpande@nygenome.org>, Johnathan Rafailov <jrafailov@nygenome.org>, Sebastian Brylka <sebastian.brylka@nyulangone.org>
 
 
 dryclean <- R6::R6Class("dryclean",
   private = list(
     history = NULL,
     pon = NULL,
-    dt_mismatch = NULL
+    dt_mismatch = NULL,
+    log_action = function(action) {
+      private$history <- rbindlist(
+        list(private$history, data.table(action = action, date = as.character(Sys.time()))),
+        use.names = TRUE, fill = TRUE
+      )
+    }
   ),
   public = list(
 
     #' @method initialize() initialize()
-    #' @description Initialize dryclean object. Authors: Aditya Deshpande, Sebastian Brylka
+    #' @description Initialize dryclean object.
     #'
+    #' @author Aditya Deshpande, Sebastian Brylka
     #' @param pon PON object
     #'
     initialize = function(pon) {
       private$history <- data.table(action = character(), date = character())
-      private$history <- rbindlist(list(private$history, data.table(action = "Created dryclean object", date = as.character(Sys.time()))))
+
+      private$log_action("Created dryclean object")
 
       private$pon <- pon
     },
@@ -62,47 +71,34 @@ dryclean <- R6::R6Class("dryclean",
     #' @return Drycleaned coverage in GRanges format
     clean = function(cov, center = TRUE, centering = "mean", cbs = FALSE, cnsignif = 1e-5, mc.cores = 1, verbose = TRUE, use.blacklist = FALSE, blacklist_path = NA, germline.filter = FALSE, field = "reads.corrected", testing = FALSE) {
       message("Loading coverage")
-      private$history <- rbindlist(list(private$history, data.table(action = paste("Loaded coverage from", cov), date = as.character(Sys.time()))))
-      cov <- readRDS(cov)
+      private$log_action(paste("Loaded coverage from", cov))
 
-      is.chr <- FALSE
-      if (any(grepl("chr", as.character(seqnames(cov))))) {
-        cov <- gr.sub(cov)
-        is.chr <- TRUE
+      if(verbose == TRUE) {
+        message("Loading coverage")
       }
 
-      # cov <- cov %>%
-      #   gr2dt() %>%
-      #   ## filter(seqnames != "Y") %>%
-      #   dt2gr()
-      # cov <- cov %>% gr2dt() %>% filter(seqnames != 'X') %>% dt2gr()
+      cov.read <- readRDS(cov) %>% gr.nochr()
 
       if (verbose == TRUE) {
         message("Loading PON a.k.a detergent")
       }
+      private$log_action("Loaded PON")
 
-
-      private$history <- rbindlist(list(private$history, data.table(action = "Loaded PON", date = as.character(Sys.time()))))
-
-      tumor.binsize <- median(gr2dt(cov)$width)
+      tumor.binsize <- median(gr2dt(cov.read)$width)
       pon.binsize <- median(gr2dt(private$pon$get_template())$width)
 
       if (tumor.binsize != pon.binsize & testing == FALSE) {
         message(paste0("WARNING: Input tumor bin size = ", tumor.binsize, "bp. PON bin size = ", pon.binsize, "bp. Rebinning tumor to bin size of PON..."))
-        private$history <- rbindlist(list(private$history, data.table(action = paste("Rebinning tumor to", pon.binsize, "bp bin size"), date = as.character(Sys.time()))))
+        private$log_action(paste("Rebinning tumor to", pon.binsize, "bp bin size"))
         suppressWarnings({
-          cov <- gr.val(query = private$pon$get_template(), cov, val = field)
+          cov <- gr.val(query = private$pon$get_template(), cov.read, val = field)
         })
       }
 
-      pon.length <- private$pon$get_template() %>% length()
-        # gr2dt() %>%
-        # ## dplyr::filter(seqnames != "Y") %>%
-        # dt2gr() %>%
-        
+      pon.length <- private$pon$get_template() %>% length()      
 
       if (length(cov) != pon.length & testing == FALSE) {
-        dt_mismatch <- data.table(chr = c(), coverage = c(), pon = c())
+        c <- data.table(chr = c(), coverage = c(), pon = c())
         for (chr in c(1:22, "X", "Y")) {
           dt_mismatch <- rbind(
             dt_mismatch,
@@ -127,7 +123,7 @@ dryclean <- R6::R6Class("dryclean",
         message(paste0("Let's begin, this is whole exome/genome"))
       }
       
-      private$history <- rbindlist(list(private$history, data.table(action = paste("Started drycleaning the coverage file"), date = as.character(Sys.time()))))
+      private$log_action("Started drycleaning the coverage file")
 
       if (germline.filter & is.null(private$pon$get_inf_germ())) {
         stop("If germline.filter is set to TRUE, pon must have a inf_germ element, see prepare_detergent for details")
@@ -148,11 +144,11 @@ dryclean <- R6::R6Class("dryclean",
         if ((is.na(blacklist_path) | blacklist_path == "NA")) {
           blacklist_path <- system.file("extdata", "blacklist_A.rds", package = "dryclean")
           message(paste0("Applying the default mask to the coverage"))
-          private$history <- rbindlist(list(private$history, data.table(action = paste("Applying the defualt mask to coverage"), date = as.character(Sys.time()))))
+          private$log_action("Applying the default mask to coverage")
         } else {
           blacklist_path <- blacklist_path
           message(paste0("Applying the provided mask to the coverage"))
-          private$history <- rbindlist(list(private$history, data.table(action = paste("Applying the provided mask to coverage"), date = as.character(Sys.time()))))
+          private$log_action("Applying the provided mask to coverage")
         }
 
         suppressWarnings({
@@ -176,7 +172,7 @@ dryclean <- R6::R6Class("dryclean",
       }
 
       message(paste0(centering, "-centering the sample"))
-      private$history <- rbindlist(list(private$history, data.table(action = paste0(centering, "normalization of coverage"), date = as.character(Sys.time()))))
+      private$log_action(paste0(centering, " normalization of coverage"))
 
       cov <- prep_cov(cov,
         use.blacklist = use.blacklist,
@@ -289,7 +285,7 @@ dryclean <- R6::R6Class("dryclean",
         cov <- gr.chr(cov)
       }
 
-      private$history <- rbindlist(list(private$history, data.table(action = paste("Finished drycleaning the coverage file"), date = as.character(Sys.time()))))
+      private$log_action("Finished drycleaning the coverage file")
 
       if (cbs == TRUE) {
         message("Starting CBS on the drycleaned sample")
@@ -334,12 +330,12 @@ dryclean <- R6::R6Class("dryclean",
 
         gc()
 
-        private$history <- rbindlist(list(private$history, data.table(action = paste("Applied CBS correction to the drycleaned coverage file"), date = as.character(Sys.time()))))
+        private$log_action("Applied CBS correction to the drycleaned coverage file")
 
         # return(out)
         saveRDS(out, "cbs_output.rds")
 
-        private$history <- rbindlist(list(private$history, data.table(action = paste("Saved CBS output in current directory as cbs_output.rds"), date = as.character(Sys.time()))))
+        private$log_action("Saved CBS output in current directory as cbs_output.rds")
       }
 
       return(cov)
