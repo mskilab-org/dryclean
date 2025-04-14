@@ -715,6 +715,7 @@ pon <- R6::R6Class("pon",
         private$V.hat <- pon$V.hat
         private$sigma.hat <- pon$sigma.hat
         private$template <- pon$template
+        private$pon.path <- pon_path
         rm(pon)
       }
 
@@ -833,6 +834,25 @@ pon <- R6::R6Class("pon",
     #' @return seqlengths of template of the pon object
     get_seqlengths = function() {
       return(seqlengths(private$template))
+    },
+
+    #' @method save_pon() save_pon()
+    #' @description Function to save_pon if not saved
+    #' @param path_to_save character (default == "./") path to save the pon object
+    
+    save_pon = function(path_to_save = "./detergent.rds") {
+      list(
+        L = private$L,
+        S = private$S,
+        err = private$err,
+        k = private$k,
+        U.hat = private$U.hat,
+        V.hat = private$V.hat,
+        sigma.hat = private$sigma.hat,
+        inf.germ = private$inf.germ,
+        template = private$template
+      ) %>%
+        saveRDS(file = path_to_save, compress = "xz")
     }
   )
 )
