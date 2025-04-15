@@ -114,15 +114,13 @@ test_that("initialize", {
 
 
 test_that("clean", {
-  
-  pon_object = pon$new(pon_path = detergent.path)
-  
+
   dryclean_object <- dryclean$new(pon = pon_object)
   
   a <- dryclean_object$clean(cov = sample.1.path, testing = TRUE)
   expect_true(identical(colnames(values(a)), c("background.log", "foreground.log", "signal", "input.read.counts", "center.all", "median.chr", "foreground", "background", "log.reads")))
   
-  expect_equal(a$background.log[1], 0.0508, tolerance = 0.001)
+  expect_equal(a$background.log[1] %>% round(4), 0.0266, tolerance = 0.001)
 })
 
 
@@ -154,7 +152,7 @@ test_that("get_history", {
 
 test_that("cbs", {
   
-  pon_object = pon$new(pon_path = detergent.path)
+  #pon_object = pon$new(pon_path = detergent.path)
   
   dryclean_object <- dryclean$new(pon = pon_object)
   
@@ -191,7 +189,7 @@ test_that("clustering", {
     number.of.samples = 2
   )
 
-  expect_equal(pon_object$get_L()[5], 0.004731082, tolerance = 0.00001) 
+  expect_equal(pon_object$get_L()[5], 0.01749593, tolerance = 0.00001) 
   
 })
 

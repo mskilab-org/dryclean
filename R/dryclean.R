@@ -366,10 +366,9 @@ pon <- R6::R6Class("pon",
     prepare_pon = function(save_pon, use.all, choose.randomly, choose.by.clustering, number.of.samples, verbose, num.cores, tolerance, is.human, build, field, PAR.file, balance, infer.germline, signal.thresh, pct.thresh, wgs, target_resolution, nochr, all.chr = c(as.character(1:22), "X", "Y")) {
       normal.table <- private$normal.table
       if (save_pon == TRUE) {
-        warning(paste0("New PON will be generated and saved at ", private$pon.path))
-        Sys.sleep(3)
-        warning("Giving you some time to think...")
-        Sys.sleep(5)
+        message(paste0("New PON will be generated and saved at ", private$pon.path))
+        message("Giving you some time to think...")
+        Sys.sleep(8)
 
         path.to.save <- private$pon.path
       }
@@ -490,8 +489,7 @@ pon <- R6::R6Class("pon",
 
         set.seed(12)
         samp.selected <- memb[, .SD[sample(1:.N, 1)], by = V1]$rn
-        samp.final <- normal.table[samp.selected]
-        setkey(samp.final, "sample")
+        samp.final <- samp.final[as.numeric(samp.selected)]
       }
 
       # if (use.all) {
@@ -577,7 +575,6 @@ pon <- R6::R6Class("pon",
       if (verbose) {
         message("Starting decomposition")
       }
-
 
       mat.bind.t <- matrix(unlist(mat.n), ncol = length(mat.n))
       # print(nrow(mat.bind.t))
