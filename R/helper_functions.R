@@ -292,25 +292,14 @@ generate_template <- function(cov, wgs = wgs, target_resolution = target_resolut
 }
 
 #' @title validate_pon_paths
-#' @name 
-#' Validate PON Paths
-#'
-#' Checks that the provided Panel of Normals (PON) file paths are valid and accessible.
-#'
-#' This function validates that each file path supplied in the input is a well-formed path and that the file exists.
-#' It raises an informative error if any path does not meet the required criteria for subsequent processing. Returns as list
-#' of rebinned coverages.
-#'
+#' @details Checks that the provided Panel of Normals (PON) file paths are valid and accessible. This function validates that each file path supplied in the input is a well-formed path and that the file exists. It raises an informative error if any path does not meet the required criteria for subsequent processing. Returns as list of rebinned coverages. The function performs necessary checks for file existence and proper format. Ensure that the provided paths correspond to files that are accessible in the current environment.
+#' @name validate_pon_paths
 #' @param pon_paths A character vector of file paths to PON files.
 #' @param field
 #' @param target_resolution
 #' @param cores
 #' @param all.chr
 #' @return A character vector of validated PON file paths.
-#' @details
-#' The function performs necessary checks for file existence and proper format. Ensure that the provided paths
-#' correspond to files that are accessible in the current environment.
-#'
 #' @examples
 #' \dontrun{
 #'   # Validate PON file paths

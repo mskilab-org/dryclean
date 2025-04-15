@@ -97,8 +97,8 @@ dryclean <- R6::R6Class("dryclean",
 
       pon.length <- private$pon$get_template() %>% length()   
 
-      dt_cov <- gr2dt(cov)[seqnames %in% all.chr, .(cov.bins = .N), by = seqnames]
-      dt_pon <- gr2dt(private$pon$get_template())[seqnames %in% all.chr, .(pon.bins = .N), by = seqnames]
+      dt_cov <- gr2dt(cov)[, .(cov.bins = .N), by = seqnames]
+      dt_pon <- gr2dt(private$pon$get_template())[, .(pon.bins = .N), by = seqnames]
       private$dt_mismatch <- merge(dt_cov, dt_pon, by = "seqnames", all = TRUE)[
         cov.bins != pon.bins, 
         .(seqnames, cov.bins, pon.bins)
@@ -123,7 +123,7 @@ dryclean <- R6::R6Class("dryclean",
         stop("If germline.filter is set to TRUE, pon must have a inf_germ element, see prepare_detergent for details")
       }
 
-      cov <- cov %Q% (seqnames %in% all.chr)
+      #cov <- cov %Q% (seqnames %in% all.chr)
       mcols(cov)$signal <- mcols(cov)[[field]]
       mcols(cov)[[field]] <- NULL
       cov <- sortSeqlevels(cov)
@@ -184,8 +184,6 @@ dryclean <- R6::R6Class("dryclean",
         S.burnin <- S.burnin[blacklisted, ]
         U.hat <- U.hat[blacklisted, ]
       }
-
-      debug(wash_cycle)
 
       decomposed <- wash_cycle(
         m.vec = m.vec, L.burnin = L.burnin,

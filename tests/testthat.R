@@ -1,5 +1,5 @@
 library(testthat)
-library(dryclean)
+devtools::load_all()
 
 test_check("dryclean")
 
