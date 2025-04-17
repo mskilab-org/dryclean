@@ -1,5 +1,5 @@
 #' @importFrom data.table setkeyv
-#' @importFrom gUtils gr2dt dt2gr gr.sub gr.val gr.chr gr.fix
+#' @importFrom gUtils gr2dt dt2gr gr.sub gr.val gr.chr gr.fix gr.match
 #' @import GenomicRanges
 #' @import rsvd
 #' @importFrom MASS ginv
@@ -13,7 +13,7 @@
 #' @name dryclean
 #' @title dryclean
 #' @description dryclean R6 class storing all methods and values necessary for "drycleaning"
-#' @detals Add more details
+#' @details Add more details
 #'
 #' @param pon PON object
 #' @param history data.table to store history of dryclean object
@@ -363,6 +363,12 @@ pon <- R6::R6Class("pon",
     sigma.hat = NULL,
     inf.germ = NULL,
     template = NULL,
+    log_action = function(action) {
+      private$history <- rbindlist(
+        list(private$history, data.table(action = action, date = as.character(Sys.time()))),
+        use.names = TRUE, fill = TRUE
+      )
+    },
     prepare_pon = function(save_pon, use.all, choose.randomly, choose.by.clustering, number.of.samples, verbose, num.cores, tolerance, is.human, build, field, PAR.file, balance, infer.germline, signal.thresh, pct.thresh, wgs, target_resolution, nochr, all.chr = c(as.character(1:22), "X", "Y")) {
       normal.table <- private$normal.table
       if (save_pon == TRUE) {
@@ -373,7 +379,7 @@ pon <- R6::R6Class("pon",
         path.to.save <- private$pon.path
       }
 
-      private$history <- rbindlist(list(private$history, data.table(action = paste("Started PON preparation"), date = as.character(Sys.time()))))
+      private$log_action("Started PON preparation")
       if (verbose) {
         message("Starting the preparation of Panel of Normal samples a.k.a detergent")
       }
@@ -616,7 +622,7 @@ pon <- R6::R6Class("pon",
       private$sigma.hat <- detergent$sigma.hat
 
       private$template <- detergent$template
-      private$history <- rbindlist(list(private$history, data.table(action = paste("Created new PON from the normal samples"), date = as.character(Sys.time()))))
+      private$log_action("Created new PON from the normal samples.")
 
       if (verbose) {
         message("Finished making the PON")
@@ -624,7 +630,7 @@ pon <- R6::R6Class("pon",
 
       if (save_pon == TRUE) {
         saveRDS(detergent, paste0(path.to.save))
-        private$history <- rbindlist(list(private$history, data.table(action = paste("Saved new PON at", private$pon.path), date = as.character(Sys.time()))))
+        private$log_action(paste("Saved new PON at", private$pon.path))
         if (verbose) {
           message("Finished saving the PON to the provided path")
         }
@@ -691,7 +697,7 @@ pon <- R6::R6Class("pon",
       message("Loading PON...")
 
       private$history <- data.table(action = character(), date = character())
-      private$history <- rbindlist(list(private$history, data.table(action = "Created pon object", date = as.character(Sys.time()))))
+      private$log_action("Created pon object")
 
       if (is.null(pon_path) & create_new_pon == FALSE) {
         stop("ERROR: Provide pon_path or set create_new_pon = TRUE")
@@ -733,8 +739,9 @@ pon <- R6::R6Class("pon",
         private$normal.table <- data.table(normal_cov = normal_vector) %>%
           mutate(sample = paste0("sample_", row_number())) %>%
           setcolorder(c("sample", "normal_cov"))
-        private$history <- rbindlist(list(private$history, data.table(action = paste("Loaded normal vector"), date = as.character(Sys.time()))))
-
+        
+        private$log_action("Loaded normal vector")
+        
         private$prepare_pon(save_pon = save_pon, use.all = use.all, choose.randomly = choose.randomly, choose.by.clustering = choose.by.clustering, number.of.samples = number.of.samples, verbose = verbose, num.cores = num.cores, tolerance = tolerance, is.human = is.human, build = build, field = field, PAR.file = PAR.file, balance = balance, infer.germline = infer.germline, signal.thresh = signal.thresh, pct.thresh = pct.thresh, wgs = wgs, target_resolution = target_resolution, nochr = nochr, all.chr = all.chr)
       }
 

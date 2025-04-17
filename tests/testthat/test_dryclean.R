@@ -115,12 +115,21 @@ test_that("initialize", {
 
 test_that("clean", {
 
+ pon_object = pon$new(
+    create_new_pon = TRUE, 
+    normal_vector = normal_vector,
+    save_pon = TRUE,
+    pon_path = detergent_test.path,
+    field = "reads.corrected",
+    tolerance = 0.4, target_resolution = 3
+  )
+
   dryclean_object <- dryclean$new(pon = pon_object)
   
   a <- dryclean_object$clean(cov = sample.1.path, testing = TRUE)
   expect_true(identical(colnames(values(a)), c("background.log", "foreground.log", "signal", "input.read.counts", "center.all", "median.chr", "foreground", "background", "log.reads")))
   
-  expect_equal(a$background.log[1] %>% round(4), 0.0266, tolerance = 0.001)
+  expect_equal(a$background.log[1] %>% round(4), 0.0425, tolerance = 0.001)
 })
 
 
@@ -153,6 +162,13 @@ test_that("get_history", {
 test_that("cbs", {
   
   #pon_object = pon$new(pon_path = detergent.path)
+
+  pon_object = pon$new(
+    create_new_pon = TRUE, 
+    normal_vector = normal_vector,
+    field = "reads.corrected",
+    tolerance = 0.4, target_resolution = 3
+    )
   
   dryclean_object <- dryclean$new(pon = pon_object)
   

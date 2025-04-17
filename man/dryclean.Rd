@@ -6,6 +6,9 @@
 \description{
 dryclean R6 class storing all methods and values necessary for "drycleaning"
 }
+\details{
+Add more details
+}
 \author{
 Aditya Deshpande <adeshpande@nygenome.org>, Johnathan Rafailov <jrafailov@nygenome.org>, Sebastian Brylka <sebastian.brylka@nyulangone.org>
 
