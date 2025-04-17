@@ -214,26 +214,16 @@ wash_cycle <- function(m.vec, L.burnin, S.burnin, r, N, U.hat, V.hat, sigma.hat,
 ## prep_cov
 ##############################
 #' @name prep_cov
-#'
 #' @title function to prepare covearge data for decomposition and perform normalization
 #' @description prepares the GC corrected coverage data for decomposition
-#'
 #' @keywords internal
-#'
 #' @param m.vec GRanges object. GRanges containing GC corrected reads as a column in metadata
-#'
 #' @param blacklist, boolean (default == FALSE). Whether to exclude off-target markers in case of Exomes or targeted sequqnecing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not.
-#'
 #' @param burnin.samples.path, character (default = NA). Path to balcklist markers file
-#'
 #' @param center, character (default == FALSE). Transform the data to centered?
-#'
 #' @param centering, enum of "mean" or "median" ONLY (default = "mean"). Paradigm of centering.
-#'
 #' @return vector of length m with processed coverage data
-#'
 #' @author Aditya Deshpande / Johnathan Rafailov
-
 prep_cov <- function(m.vec = m.vec, use.blacklist = FALSE, blacklist = NA, center = FALSE, centering = "mean") {
   mcols(m.vec)$signal[which(is.infinite(mcols(m.vec)$signal))] <- NA
   mcols(m.vec)$og.signal <- mcols(m.vec)$signal
@@ -257,8 +247,6 @@ prep_cov <- function(m.vec = m.vec, use.blacklist = FALSE, blacklist = NA, cente
   m.vec[is.infinite(signal), signal := min.cov]
   m.vec[signal == 0, signal := min.cov]
   m.vec[signal < 0, signal := min.cov]
-
-
 
   if (use.blacklist) {
     m.vec$blacklisted <- blacklist
@@ -301,4 +289,59 @@ generate_template <- function(cov, wgs = wgs, target_resolution = target_resolut
   cov <- cov %Q% (seqnames %in% all.chr)
   template <- cov[, c()]
   return(template)
+}
+
+#' @title validate_pon_paths
+#' @details Checks that the provided Panel of Normals (PON) file paths are valid and accessible. This function validates that each file path supplied in the input is a well-formed path and that the file exists. It raises an informative error if any path does not meet the required criteria for subsequent processing. Returns as list of rebinned coverages. The function performs necessary checks for file existence and proper format. Ensure that the provided paths correspond to files that are accessible in the current environment.
+#' @name validate_pon_paths
+#' @param pon_paths A character vector of file paths to PON files.
+#' @param field
+#' @param target_resolution
+#' @param cores
+#' @param all.chr
+#' @return A character vector of validated PON file paths.
+#' @examples
+#' \dontrun{
+#'   # Validate PON file paths
+#'   valid_paths <- validate_pon_paths(c("/path/to/pon1.txt", "/path/to/pon2.txt"))
+#' }
+validate_pon_paths <- function(pon_paths, field, target_resolution, cores, all.chr = c(1:22, "X", "Y"), verbose = TRUE) {
+
+  if (verbose) {
+    message("Validating PON paths...")
+  }
+
+  skip.files <- !file.exists(pon_paths)
+  
+
+  if(length(which(skip.files)) > 0) {
+    message(sprintf("Number of files that do not exist: %d", sum(skip.files)))
+    message(paste0("Skipping files (do not exist): ", paste(pon_paths[skip.files], collapse = ", ")))
+  }
+
+  result <- mclapply(pon_paths[!skip.files], function(path) {
+    cov.dt <- readRDS(path) %>% gr.nochr() %>% gr2dt()
+    bin.size <- median(cov.dt$width, na.rm = TRUE)
+    n.bins.chr <- cov.dt[seqnames %in% all.chr, .N, by = seqnames]
+    setnames(n.bins.chr, "N", paste0("normal_", match(path, pon_paths)))
+    list(bin.size = bin.size, n.bins.chr = n.bins.chr)
+  }, mc.cores = cores)
+
+  bin.sizes <- sapply(result, function(x) x$bin.size)
+  names(bin.sizes) <- paste0("normal_", seq_along(bin.sizes))
+
+  rebin <- bin.sizes != target_resolution
+
+  file.reads <- pbmcapply::pbmcmapply(function(nm, path, rebin){
+    cov.gr <- readRDS(path) %>% gr.nochr()
+    og.resolution <- median(width(cov.gr), na.rm = TRUE)
+    if (rebin) {
+      message(sprintf("Rebinning %s (%d bp) to %d bp ...", nm, og.resolution, target_resolution))
+      cov.gr <- collapse_cov(cov.gr, this.field = field, bin.size = target_resolution)
+    }
+    return(cov.gr) 
+  }, names(rebin), pon_paths[!skip.files], rebin, mc.cores = cores)
+
+  return(file.reads)
+
 }

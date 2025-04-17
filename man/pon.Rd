@@ -27,6 +27,7 @@ Aditya Deshpande <asd3002@med.cornell.edu>, Sebastian Brylka <sebastian.brylka@n
 \item \href{#method-pon-get_sigma_hat}{\code{pon$get_sigma_hat()}}
 \item \href{#method-pon-get_inf_germ}{\code{pon$get_inf_germ()}}
 \item \href{#method-pon-get_seqlengths}{\code{pon$get_seqlengths()}}
+\item \href{#method-pon-save_pon}{\code{pon$save_pon()}}
 \item \href{#method-pon-clone}{\code{pon$clone()}}
 }
 }
@@ -256,6 +257,23 @@ Function returns the seqlengths of the template of pon object
 
 \subsection{Returns}{
 seqlengths of template of the pon object
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-pon-save_pon"></a>}}
+\if{latex}{\out{\hypertarget{method-pon-save_pon}{}}}
+\subsection{Method \code{save_pon()}}{
+Function to save_pon if not saved
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{pon$save_pon(path_to_save = "./detergent.rds")}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{path_to_save}}{character (default == "./") path to save the pon object}
+}
+\if{html}{\out{</div>}}
 }
 }
 \if{html}{\out{<hr>}}

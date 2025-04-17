@@ -6,11 +6,10 @@
 \description{
 dryclean R6 class storing all methods and values necessary for "drycleaning"
 }
-\details{
-Add more details
-}
 \author{
-Aditya Deshpande <asd3002@med.cornell.edu>, Sebastian Brylka <sebastian.brylka@nyulangone.org>
+Aditya Deshpande <adeshpande@nygenome.org>, Johnathan Rafailov <jrafailov@nygenome.org>, Sebastian Brylka <sebastian.brylka@nyulangone.org>
+
+Aditya Deshpande, Sebastian Brylka
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -26,7 +25,7 @@ Aditya Deshpande <asd3002@med.cornell.edu>, Sebastian Brylka <sebastian.brylka@n
 \if{html}{\out{<a id="method-dryclean-new"></a>}}
 \if{latex}{\out{\hypertarget{method-dryclean-new}{}}}
 \subsection{Method \code{new()}}{
-Initialize dryclean object. Authors: Aditya Deshpande, Sebastian Brylka
+Initialize dryclean object.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{dryclean$new(pon)}\if{html}{\out{</div>}}
 }
@@ -54,7 +53,7 @@ Function begins the online rPCA process. Use this function if you performed batc
   mc.cores = 1,
   verbose = TRUE,
   use.blacklist = FALSE,
-  blacklist_path = NA,
+  blacklist_path = system.file("extdata", "blacklist_A.rds", package = "dryclean"),
   germline.filter = FALSE,
   field = "reads.corrected",
   testing = FALSE
@@ -78,7 +77,7 @@ Function begins the online rPCA process. Use this function if you performed batc
 
 \item{\code{use.blacklist}}{boolean (default = FALSE) whether to exclude off-target markers in case of Exomes or targeted sequencing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not or will use a default mask}
 
-\item{\code{blacklist_path}}{character (default = NA) if use.blacklist == TRUE, path a GRanges object marking if each marker is set to be excluded or not}
+\item{\code{blacklist_path}}{character (default = attached mask in extdata for hg19 aligned tumor samples) if use.blacklist == TRUE, path a GRanges object marking if each marker is set to be excluded or not}
 
 \item{\code{germline.filter}}{boolean (default == FALSE) if germline markers need to be removed from decomposition}
 

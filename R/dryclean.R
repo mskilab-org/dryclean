@@ -13,33 +13,42 @@
 #' @name dryclean
 #' @title dryclean
 #' @description dryclean R6 class storing all methods and values necessary for "drycleaning"
-#' @details Add more details
+#' @detals Add more details
 #'
 #' @param pon PON object
 #' @param history data.table to store history of dryclean object
 #' @param dt_mismatch data.table to store mismatching chromosomes between coverage and PON
+#' @param log_action function to log actions performed on the dryclean object
 #'
 #' @export
 #'
-#' @author Aditya Deshpande <asd3002@med.cornell.edu>, Sebastian Brylka <sebastian.brylka@nyulangone.org>
+#' @author Aditya Deshpande <adeshpande@nygenome.org>, Johnathan Rafailov <jrafailov@nygenome.org>, Sebastian Brylka <sebastian.brylka@nyulangone.org>
 
 
 dryclean <- R6::R6Class("dryclean",
   private = list(
     history = NULL,
     pon = NULL,
-    dt_mismatch = NULL
+    dt_mismatch = NULL,
+    log_action = function(action) {
+      private$history <- rbindlist(
+        list(private$history, data.table(action = action, date = as.character(Sys.time()))),
+        use.names = TRUE, fill = TRUE
+      )
+    }
   ),
   public = list(
 
     #' @method initialize() initialize()
-    #' @description Initialize dryclean object. Authors: Aditya Deshpande, Sebastian Brylka
+    #' @description Initialize dryclean object.
     #'
+    #' @author Aditya Deshpande, Sebastian Brylka
     #' @param pon PON object
     #'
     initialize = function(pon) {
       private$history <- data.table(action = character(), date = character())
-      private$history <- rbindlist(list(private$history, data.table(action = "Created dryclean object", date = as.character(Sys.time()))))
+
+      private$log_action("Created dryclean object")
 
       private$pon <- pon
     },
@@ -54,116 +63,86 @@ dryclean <- R6::R6Class("dryclean",
     #' @param cnsignif integer (default = 1e-5) the significance levels for the tests in cbs to accept change-points
     #' @param mc.cores interger (default == 1) number of cores to use for parallelization
     #' @param use.blacklist boolean (default = FALSE) whether to exclude off-target markers in case of Exomes or targeted sequencing. If set to TRUE, needs a GRange marking if each marker is set to be excluded or not or will use a default mask
-    #' @param blacklist_path character (default = NA) if use.blacklist == TRUE, path a GRanges object marking if each marker is set to be excluded or not
+    #' @param blacklist_path character (default = attached mask in extdata for hg19 aligned tumor samples) if use.blacklist == TRUE, path a GRanges object marking if each marker is set to be excluded or not
     #' @param germline.filter boolean (default == FALSE) if germline markers need to be removed from decomposition
     #' @param verbose boolean (default == TRUE) outputs progress
     #' @param field character (default == "reads.corrected") field to use for processing
     #' @param testing boolean (default = FALSE) DO NOT CHANGE
     #' @return Drycleaned coverage in GRanges format
-    clean = function(cov, center = TRUE, centering = "mean", cbs = FALSE, cnsignif = 1e-5, mc.cores = 1, verbose = TRUE, use.blacklist = FALSE, blacklist_path = NA, germline.filter = FALSE, field = "reads.corrected", testing = FALSE) {
-      message("Loading coverage")
-      private$history <- rbindlist(list(private$history, data.table(action = paste("Loaded coverage from", cov), date = as.character(Sys.time()))))
-      cov <- readRDS(cov)
+    clean = function(cov, center = TRUE, centering = "mean", cbs = FALSE, cnsignif = 1e-5, mc.cores = 1, verbose = TRUE, use.blacklist = FALSE, blacklist_path = system.file("extdata", "blacklist_A.rds", package = "dryclean"), germline.filter = FALSE, field = "reads.corrected", testing = FALSE) {
+      
+      private$log_action(paste("Loaded coverage from", cov))
 
-      is.chr <- FALSE
-      if (any(grepl("chr", as.character(seqnames(cov))))) {
-        cov <- gr.sub(cov)
-        is.chr <- TRUE
+      if(verbose == TRUE) {
+        message("Loading coverage")
       }
 
-      # cov <- cov %>%
-      #   gr2dt() %>%
-      #   ## filter(seqnames != "Y") %>%
-      #   dt2gr()
-      # cov <- cov %>% gr2dt() %>% filter(seqnames != 'X') %>% dt2gr()
+      cov <- cov %>% readRDS %>%  gr.nochr()
 
       if (verbose == TRUE) {
         message("Loading PON a.k.a detergent")
       }
-
-
-      private$history <- rbindlist(list(private$history, data.table(action = "Loaded PON", date = as.character(Sys.time()))))
+      private$log_action("Loaded PON")
 
       tumor.binsize <- median(gr2dt(cov)$width)
       pon.binsize <- median(gr2dt(private$pon$get_template())$width)
 
       if (tumor.binsize != pon.binsize & testing == FALSE) {
-        message(paste0("WARNING: Input tumor bin size = ", tumor.binsize, "bp. PON bin size = ", pon.binsize, "bp. Rebinning tumor to bin size of PON..."))
-        private$history <- rbindlist(list(private$history, data.table(action = paste("Rebinning tumor to", pon.binsize, "bp bin size"), date = as.character(Sys.time()))))
+        warning(sprintf("Input tumor bin size = %s bp. PON bin size = %s bp. Rebinning tumor to bin size of PON...", tumor.binsize, pon.binsize))
+        private$log_action(paste("Rebinning tumor to", pon.binsize, "bp bin size"))
         suppressWarnings({
           cov <- gr.val(query = private$pon$get_template(), cov, val = field)
         })
       }
 
-      pon.length <- private$pon$get_template() %>% length()
-        # gr2dt() %>%
-        # ## dplyr::filter(seqnames != "Y") %>%
-        # dt2gr() %>%
-        
+      pon.length <- private$pon$get_template() %>% length()   
 
-      if (length(cov) != pon.length & testing == FALSE) {
-        dt_mismatch <- data.table(chr = c(), coverage = c(), pon = c())
-        for (chr in c(1:22, "X", "Y")) {
-          dt_mismatch <- rbind(
-            dt_mismatch,
-            data.table(
-              chr = chr,
-              coverage = cov %>% gr2dt() %>% filter(seqnames == chr) %>% nrow(),
-              pon = private$pon$get_template() %>% gr2dt() %>% filter(seqnames == chr) %>% nrow()
-            )
-          )
-        }
-        dt_mismatch <- dt_mismatch %>% filter(coverage != pon)
-        private$dt_mismatch <- dt_mismatch
-        if (testing == FALSE) {
-          message("WARNING: Number of bins of coverage and PON does not match. Use get_mismatch() function to see mismatched chromosomes\nAligning coverage to the PON")
-          suppressWarnings({
-            cov <- gr.val(query = private$pon$get_template(), cov, val = field)
-          })
-        }
+      dt_cov <- gr2dt(cov)[, .(cov.bins = .N), by = seqnames]
+      dt_pon <- gr2dt(private$pon$get_template())[, .(pon.bins = .N), by = seqnames]
+      private$dt_mismatch <- merge(dt_cov, dt_pon, by = "seqnames", all = TRUE)[
+        cov.bins != pon.bins, 
+        .(seqnames, cov.bins, pon.bins)
+      ]
+      if (length(cov) != pon.length) {
+        
+        warning("Number of bins of coverage and PON do not match. Use the get_mismatch() function to see mismatched chromosomes. Re aligning coverage per chromosome to the PON-defined bins.")
+        private$log_action("Number of bins of coverage and PON do not match. Re aligning coverage per chromosome to the PON-defined bins.")
+
+        suppressWarnings({
+          cov <- gr.val(query = private$pon$get_template(), cov, val = field)
+        })
       }
 
       if (verbose == TRUE) {
         message(paste0("Let's begin, this is whole exome/genome"))
       }
       
-      private$history <- rbindlist(list(private$history, data.table(action = paste("Started drycleaning the coverage file"), date = as.character(Sys.time()))))
+      private$log_action("Started drycleaning the coverage file")
 
       if (germline.filter & is.null(private$pon$get_inf_germ())) {
         stop("If germline.filter is set to TRUE, pon must have a inf_germ element, see prepare_detergent for details")
       }
 
-      all.chr <- c(as.character(1:22), "X", "Y")
-
-      local.all.chr <- all.chr
-      cov <- cov %Q% (seqnames %in% local.all.chr)
-      cov <- cov[, field] %>%
-        gr2dt() %>%
-        setnames(., field, "signal")
-      cov <- cov %>% dt2gr()
+      #cov <- cov %Q% (seqnames %in% all.chr)
+      mcols(cov)$signal <- mcols(cov)[[field]]
+      mcols(cov)[[field]] <- NULL
       cov <- sortSeqlevels(cov)
       cov <- sort(cov)
 
       if (use.blacklist == TRUE) {
-        if ((is.na(blacklist_path) | blacklist_path == "NA")) {
-          blacklist_path <- system.file("extdata", "blacklist_A.rds", package = "dryclean")
-          message(paste0("Applying the default mask to the coverage"))
-          private$history <- rbindlist(list(private$history, data.table(action = paste("Applying the defualt mask to coverage"), date = as.character(Sys.time()))))
-        } else {
-          blacklist_path <- blacklist_path
-          message(paste0("Applying the provided mask to the coverage"))
-          private$history <- rbindlist(list(private$history, data.table(action = paste("Applying the provided mask to coverage"), date = as.character(Sys.time()))))
-        }
 
+        private$log_action("Applying the provided mask to coverage")
+        
         suppressWarnings({
+
           blacklist_pon <- gUtils::gr.val(
             query = private$pon$get_template(),
             target = readRDS(blacklist_path),
             val = "blacklisted",
             na.rm = TRUE
           )$blacklisted
-          blacklist_pon <- ifelse(blacklist_pon == 1, TRUE, FALSE)
 
+          blacklist_pon <- ifelse(blacklist_pon == 1, TRUE, FALSE)
 
           blacklist_cov <- gUtils::gr.val(
             query = cov,
@@ -171,12 +150,13 @@ dryclean <- R6::R6Class("dryclean",
             val = "blacklisted",
             na.rm = TRUE
           )$blacklisted
+
           blacklist_cov <- ifelse(blacklist_cov == 1, TRUE, FALSE)
         })
       }
 
       message(paste0(centering, "-centering the sample"))
-      private$history <- rbindlist(list(private$history, data.table(action = paste0(centering, "normalization of coverage"), date = as.character(Sys.time()))))
+      private$log_action(paste0(centering, " normalization of coverage"))
 
       cov <- prep_cov(cov,
         use.blacklist = use.blacklist,
@@ -185,7 +165,6 @@ dryclean <- R6::R6Class("dryclean",
         centering = centering
       )
       
-
       m.vec <- as.matrix(cov$signal)
       L.burnin <- private$pon$get_L()
       S.burnin <- private$pon$get_S()
@@ -262,7 +241,6 @@ dryclean <- R6::R6Class("dryclean",
         cov <- na.omit(cov)
       }
 
-      # browser()
       cov <- dt2gr(cov)
 
       if (use.blacklist) {
@@ -285,11 +263,7 @@ dryclean <- R6::R6Class("dryclean",
         })
       }
 
-      if (is.chr) {
-        cov <- gr.chr(cov)
-      }
-
-      private$history <- rbindlist(list(private$history, data.table(action = paste("Finished drycleaning the coverage file"), date = as.character(Sys.time()))))
+      private$log_action("Finished drycleaning the coverage file")
 
       if (cbs == TRUE) {
         message("Starting CBS on the drycleaned sample")
@@ -334,12 +308,12 @@ dryclean <- R6::R6Class("dryclean",
 
         gc()
 
-        private$history <- rbindlist(list(private$history, data.table(action = paste("Applied CBS correction to the drycleaned coverage file"), date = as.character(Sys.time()))))
+        private$log_action("Applied CBS correction to the drycleaned coverage file")
 
         # return(out)
         saveRDS(out, "cbs_output.rds")
 
-        private$history <- rbindlist(list(private$history, data.table(action = paste("Saved CBS output in current directory as cbs_output.rds"), date = as.character(Sys.time()))))
+        private$log_action("Saved CBS output in current directory as cbs_output.rds")
       }
 
       return(cov)
@@ -389,14 +363,12 @@ pon <- R6::R6Class("pon",
     sigma.hat = NULL,
     inf.germ = NULL,
     template = NULL,
-    prepare_pon = function(save_pon, use.all, choose.randomly, choose.by.clustering, number.of.samples, verbose, num.cores, tolerance, is.human, build, field, PAR.file, balance, infer.germline, signal.thresh, pct.thresh, wgs, target_resolution, nochr, all.chr) {
+    prepare_pon = function(save_pon, use.all, choose.randomly, choose.by.clustering, number.of.samples, verbose, num.cores, tolerance, is.human, build, field, PAR.file, balance, infer.germline, signal.thresh, pct.thresh, wgs, target_resolution, nochr, all.chr = c(as.character(1:22), "X", "Y")) {
       normal.table <- private$normal.table
-
       if (save_pon == TRUE) {
-        message(paste0("WARNING: New PON will be generated and saved at ", private$pon.path))
-        Sys.sleep(3)
-        message("\nGiving you some time to think...\n")
-        Sys.sleep(5)
+        message(paste0("New PON will be generated and saved at ", private$pon.path))
+        message("Giving you some time to think...")
+        Sys.sleep(8)
 
         path.to.save <- private$pon.path
       }
@@ -412,27 +384,36 @@ pon <- R6::R6Class("pon",
       num.samp <- nrow(normal.table)
 
       if (verbose) {
-        message(paste0(num.samp, " samples available"))
+        message(paste0(num.samp, " samples provided."))
       }
 
-      if (use.all & choose.randomly | use.all & choose.by.clustering | choose.randomly & choose.by.clustering | use.all & choose.randomly & choose.by.clustering) {
+      if ((use.all & choose.randomly) | (use.all & choose.by.clustering) | (choose.randomly & choose.by.clustering) | (use.all & choose.randomly & choose.by.clustering)) {
         stop("only one of use.all, choose.randomly, choose.by.clustering can be set to TRUE. Rectify and restart")
       }
 
-      if (nochr) {
-        template <- generate_template(cov = gUtils::gr.nochr(readRDS(normal.table[1]$normal_cov)), wgs = wgs, target_resolution = target_resolution, this.field = field, nochr = nochr, all.chr = all.chr)
-      } else {
-        template <- generate_template(cov = readRDS(normal.table[1]$normal_cov), wgs = wgs, target_resolution = target_resolution, this.field = field, nochr = nochr, all.chr = all.chr)
-      }
+      samp.final <- validate_pon_paths(normal.table$normal_cov,
+                                      field = field,
+                                      target_resolution = target_resolution,
+                                      all.chr = all.chr,
+                                      cores = num.cores,
+                                      verbose = verbose)
+
+      template <- generate_template(
+        cov = samp.final[[1]], # use the first sample for the template
+        wgs = wgs,
+        target_resolution = target_resolution,
+        this.field = field,
+        nochr = nochr,
+        all.chr = all.chr
+      )
 
       if (choose.randomly) {
         if (verbose) {
           message(paste0("Selecting ", number.of.samples, " normal samples randomly"))
         }
         set.seed(12)
-        samp.final <- sample(1:num.samp, number.of.samples)
-        samp.final <- normal.table[samp.final]
-        setkey(samp.final, "sample")
+        sample.indices <- sample(1:num.samp, number.of.samples)
+        samp.final <- samp.final[sample.indices]
       }
 
       if (choose.by.clustering) {
@@ -440,8 +421,12 @@ pon <- R6::R6Class("pon",
           message("Starting the clustering")
         }
 
-        mat.small <- mclapply(normal.table[, sample], function(nm) {
-          this.cov <- tryCatch(readRDS(normal.table[nm, normal_cov]), error = function(e) NULL)
+        mat.small <- mclapply(samp.final, function(cov) {
+          if(!class(cov) == "GRanges") {
+           return(NULL)
+          } else {
+            this.cov <- cov
+          }
           if (!is.null(this.cov)) {
             if (nochr) {
               this.cov <- gUtils::gr.nochr(this.cov)
@@ -458,8 +443,8 @@ pon <- R6::R6Class("pon",
             reads[signal == 0, signal := min.cov]
             reads[signal < 0, signal := min.cov]
             reads <- log(reads[, .(signal)])
-            reads <- transpose(reads)
-            reads <- cbind(reads, nm)
+            reads <- data.table::transpose(reads)
+#            reads <- cbind(reads, nm)
           } ## else {reads = data.table(NA)}
           return(reads)
         }, mc.cores = num.cores)
@@ -467,8 +452,8 @@ pon <- R6::R6Class("pon",
         gc()
 
         mat.sub <- rbindlist(mat.small, fill = T)
-        mat.sub <- na.omit(mat.sub)
         ix <- ncol(mat.sub)
+        mat.sub <- na.omit(mat.sub)
         samp.names <- mat.sub[, ..ix]
         mat.sub.t <- transpose(mat.sub[, 1:(ncol(mat.sub) - 1)])
         rm(mat.sub)
@@ -504,18 +489,17 @@ pon <- R6::R6Class("pon",
 
         set.seed(12)
         samp.selected <- memb[, .SD[sample(1:.N, 1)], by = V1]$rn
-        samp.final <- normal.table[samp.selected]
-        setkey(samp.final, "sample")
+        samp.final <- samp.final[as.numeric(samp.selected)]
       }
 
-      if (use.all) {
-        if (verbose) {
-          message("Using all samples")
-        }
+      # if (use.all) {
+      #   if (verbose) {
+      #     message("Using all samples")
+      #   }
 
-        samp.final <- normal.table
-        setkey(samp.final, "sample")
-      }
+      #   samp.final <- normal.table
+      #   setkey(samp.final, "sample")
+      # }
 
 
       if (!is.null(PAR.file)) {
@@ -543,20 +527,12 @@ pon <- R6::R6Class("pon",
 
       message("PAR read")
 
-      # samp.final[, file.available := file.exists(normal_cov)]
-      samp.final <- samp.final %>%
-        mutate(file.available = file.exists(normal_cov))
-
-
-      message("Checking for existence of files")
-
-      samp.final <- samp.final[file.available == TRUE]
-
-      message(paste0(nrow(samp.final), " files present"))
-
-
-      mat.n <- pbmcapply::pbmclapply(samp.final[, sample], function(nm, all.chr) {
-        this.cov <- tryCatch(readRDS(samp.final[sample == nm, normal_cov]), error = function(e) NULL)
+      mat.n <- pbmcapply::pbmclapply(samp.final, function(cov, all.chr) {
+        if(!class(cov) == "GRanges") {
+          return(NULL)
+        } else {
+          this.cov <- cov
+        }
         if (!is.null(this.cov)) {
           ## this.cov = standardize_coverage(cov = gr.nochr(this.cov), template = template, wgs = wgs, target_resolution = target_resolution, this.field = field)
           if (nochr) {
@@ -585,8 +561,8 @@ pon <- R6::R6Class("pon",
           reads[is.na(signal), signal := median.chr]
           min.cov <- min(reads[signal > 0]$signal, na.rm = T)
           reads[is.infinite(signal), signal := min.cov]
-          reads[signal == 0, signal := min.cov]
           reads[signal < 0, signal := min.cov]
+          reads[signal == 0, signal := min.cov]
           reads[, signal := log(signal)]
           reads <- reads[, .(signal)]
           if (!any(is.infinite(reads$signal))) {
@@ -599,7 +575,6 @@ pon <- R6::R6Class("pon",
       if (verbose) {
         message("Starting decomposition")
       }
-
 
       mat.bind.t <- matrix(unlist(mat.n), ncol = length(mat.n))
       # print(nrow(mat.bind.t))
@@ -616,11 +591,6 @@ pon <- R6::R6Class("pon",
       detergent$U.hat <- rsvd.L.burnin$u
       detergent$V.hat <- t(rsvd.L.burnin$v)
       detergent$sigma.hat <- rsvd.L.burnin$d
-      ## browser()
-      ## this.template = readRDS(samp.final[1]$normal_cov)
-      ## this.template = sortSeqlevels(this.template)
-      ## this.template = sort(this.template)
-      ##
       detergent$template <- template
 
       if (infer.germline) {
@@ -740,6 +710,7 @@ pon <- R6::R6Class("pon",
         private$V.hat <- pon$V.hat
         private$sigma.hat <- pon$sigma.hat
         private$template <- pon$template
+        private$pon.path <- pon_path
         rm(pon)
       }
 
@@ -858,6 +829,25 @@ pon <- R6::R6Class("pon",
     #' @return seqlengths of template of the pon object
     get_seqlengths = function() {
       return(seqlengths(private$template))
+    },
+
+    #' @method save_pon() save_pon()
+    #' @description Function to save_pon if not saved
+    #' @param path_to_save character (default == "./") path to save the pon object
+    
+    save_pon = function(path_to_save = "./detergent.rds") {
+      list(
+        L = private$L,
+        S = private$S,
+        err = private$err,
+        k = private$k,
+        U.hat = private$U.hat,
+        V.hat = private$V.hat,
+        sigma.hat = private$sigma.hat,
+        inf.germ = private$inf.germ,
+        template = private$template
+      ) %>%
+        saveRDS(file = path_to_save, compress = "xz")
     }
   )
 )
