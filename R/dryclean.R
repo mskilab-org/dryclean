@@ -1,3 +1,4 @@
+
 #' @importFrom data.table setkeyv
 #' @importFrom gUtils gr2dt dt2gr gr.sub gr.val gr.chr gr.fix gr.match
 #' @import GenomicRanges
@@ -140,8 +141,8 @@ dryclean <- R6::R6Class("dryclean",
             target = readRDS(blacklist_path),
             val = "blacklisted",
             na.rm = TRUE
-          )$blacklisted
-
+            )$blacklisted
+            
           blacklist_pon <- ifelse(blacklist_pon == 1, TRUE, FALSE)
 
           blacklist_cov <- gUtils::gr.val(
@@ -159,11 +160,11 @@ dryclean <- R6::R6Class("dryclean",
       private$log_action(paste0(centering, " normalization of coverage"))
 
       cov <- prep_cov(cov,
-        use.blacklist = use.blacklist,
-        blacklist = blacklist_cov,
-        center = center,
-        centering = centering
-      )
+                      use.blacklist = use.blacklist,
+                      blacklist = blacklist_cov,
+                      center = center,
+                      centering = centering
+                      )
       
       m.vec <- as.matrix(cov$signal)
       L.burnin <- private$pon$get_L()
@@ -226,12 +227,10 @@ dryclean <- R6::R6Class("dryclean",
 
       cov[, log.reads := log(input.read.counts)]
       cov[is.infinite(log.reads), log.reads := NA]
-      
       scaling.factor <- sum(cov$input.read.counts, na.rm = T) / sum(cov$foreground, na.rm = T)
+      message(paste0("Sacling Factor: ", scaling.factor))
       cov$foreground <- cov$foreground * scaling.factor ## returns in rescaled binned coverage
       cov$background <- cov$background * scaling.factor
-
-      ### cov$foreground <- cov$foreground * 2 * 151 / width(cov) ## returns in average coverage per base
 
       if (germline.filter) {
         germ.file <- private$pon$get_inf_germ()
@@ -403,7 +402,7 @@ pon <- R6::R6Class("pon",
                                       all.chr = all.chr,
                                       cores = num.cores,
                                       verbose = verbose)
-
+      
       template <- generate_template(
         cov = samp.final[[1]], # use the first sample for the template
         wgs = wgs,
@@ -437,11 +436,9 @@ pon <- R6::R6Class("pon",
             if (nochr) {
               this.cov <- gUtils::gr.nochr(this.cov)
             }
-            ## this.cov = standardize_coverage(gr.nochr(this.cov), template = template, wgs = wgs, target_resolution = target_resolution, this.field = field)
             this.cov <- this.cov[, field] %>%
               gr2dt() %>%
               setnames(., field, "signal")
-            ## reads = this.cov[seqnames == "22", .(seqnames, signal)]
             reads <- this.cov[seqnames == seqnames[1], .(seqnames, signal)]
             reads[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
             reads[is.na(signal), signal := median.chr]
@@ -532,7 +529,9 @@ pon <- R6::R6Class("pon",
       }
 
       message("PAR read")
-
+      if (balance){
+        message("Considering PAR and balancing sex chromosomes")
+      }
       mat.n <- pbmcapply::pbmclapply(samp.final, function(cov, all.chr) {
         if(!class(cov) == "GRanges") {
           return(NULL)
@@ -555,8 +554,19 @@ pon <- R6::R6Class("pon",
             this.cov$mt <- suppressWarnings(gr.match(dt2gr(this.cov), par.gr))
             this.cov[, median.idx := ifelse(is.na(mt), median.idx, mt + 24)]
             this.cov[, median.chr := median(signal.org, na.rm = T), by = median.idx]
-            this.cov[, signal := ifelse(!(seqnames %in% c("X", "Y")), signal.org,
-              ifelse(median.chr == 0, 1, signal.org / median.chr)
+            ## We calculate mean as well to capture Y chr distribution as will become clear below
+            this.cov[, mean.chr := mean(signal.org, na.rm = T), by = median.idx]
+            ## NOTE: 
+            ## Non-zero centers for Y, using X are used under the assumptions that in normal 
+            ## samples, X and Y non-PAR regions are at the same copy states
+            ## Using Y, slightly under-estimates the centers given the high zero inflation
+            median_x = unique(this.cov[median.idx == 23]$median.chr)
+            this.cov[, median.chr := ifelse(median.idx == 24, median_x, median.chr)]
+            ## idx 24 is non-PAR Y chr
+            ## NOTE:
+            ## This threshold is empirical, to distinguish Y chr in male and female
+            this.cov[, signal := ifelse(!(seqnames %in% c("X", "Y")), signal.org / median.chr,
+              ifelse(mean.chr < 5, 1, signal.org / median.chr)
               )]
             this.cov[, signal := ifelse(is.na(median.chr), 1, signal)]
           } else {
@@ -569,10 +579,10 @@ pon <- R6::R6Class("pon",
           reads[is.infinite(signal), signal := min.cov]
           reads[signal < 0, signal := min.cov]
           reads[signal == 0, signal := min.cov]
+          
           reads[, signal := log(signal)]
           reads <- reads[, .(signal)]
           if (!any(is.infinite(reads$signal))) {
-            # reads = transpose(reads)
             return(reads$signal)
           }
         }
@@ -583,8 +593,6 @@ pon <- R6::R6Class("pon",
       }
 
       mat.bind.t <- matrix(unlist(mat.n), ncol = length(mat.n))
-      # print(nrow(mat.bind.t))
-      # print(ncol(mat.bind.t))
       rm(mat.n)
       gc()
 

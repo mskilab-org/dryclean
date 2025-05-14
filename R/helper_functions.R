@@ -224,40 +224,58 @@ wash_cycle <- function(m.vec, L.burnin, S.burnin, r, N, U.hat, V.hat, sigma.hat,
 #' @param centering, enum of "mean" or "median" ONLY (default = "mean"). Paradigm of centering.
 #' @return vector of length m with processed coverage data
 #' @author Aditya Deshpande / Johnathan Rafailov
-prep_cov <- function(m.vec = m.vec, use.blacklist = FALSE, blacklist = NA, center = FALSE, centering = "mean") {
+
+prep_cov <- function(m.vec = m.vec, PAR.file = NA, use.blacklist = FALSE, blacklist = NA, center = FALSE, centering = "mean", build = "hg19") {
+  if (is.na(PAR.file)) {
+    if (build == "hg38") {
+          message("PAR file not provided, using hg38 default. If this is not the correct build, please provide a GRanges object delineating for corresponding build")
+          par.path <- system.file("extdata", "PAR_hg38.rds", package = "dryclean")
+        } else {
+          message("PAR file not provided, using hg19 default. If this is not the correct build, please provide a GRanges object delineating for corresponding build")
+          par.path <- system.file("extdata", "PAR_hg19.rds", package = "dryclean")
+        }
+        par.gr <- readRDS(par.path)
+  } else {
+        par.gr <- readRDS(PAR.file)
+      }
+
   mcols(m.vec)$signal[which(is.infinite(mcols(m.vec)$signal))] <- NA
   mcols(m.vec)$og.signal <- mcols(m.vec)$signal
+  m.vec = gr2dt(m.vec)
+  m.vec[, median.idx := .GRP, by = seqnames]
+  m.vec$mt <- suppressWarnings(gr.match(dt2gr(m.vec), par.gr))
+  m.vec[, median.idx := ifelse(is.na(mt), median.idx, mt + 24)]
+  m.vec[, median.chr := median(og.signal, na.rm = T), by = median.idx]
 
+  ## We calculate mean as well to capture Y chr distribution as will become clear below
+  m.vec[, mean.chr := mean(og.signal, na.rm = T), by = median.idx]
+  
   if (center == T) {
     if (centering == "mean") {
-      m.vec$center.all <- mean(m.vec$signal, na.rm = T)
+      m.vec$center.all <- mean(m.vec$og.signal, na.rm = T)
     } else {
-      m.vec$center.all <- median(m.vec$signal, na.rm = T)
+      m.vec$center.all <- median(m.vec$og.signal, na.rm = T)
     }
-    m.vec$signal <- m.vec$signal / m.vec$center.all
   }
 
-  m.vec <- gr2dt(m.vec)
-  # m.vec = m.vec[, .(seqnames, start, end, og.signal, signal)]
-  m.vec[, median.chr := median(.SD$signal, na.rm = T), by = seqnames]
+  ## TODO:
+  ## This threshold is empirical, to distinguish Y chr in male and female
+  m.vec[, signal := ifelse(!(seqnames %in% c("X", "Y")), og.signal / center.all,
+                       ifelse(mean.chr < 5, 0, og.signal / center.all)
+                       )]
+
+  m.vec[, signal := ifelse(is.na(median.chr), 1, signal)]
+  m.vec <- m.vec[, .(seqnames, start, end, og.signal, signal, center.all, median.chr)]
   m.vec[is.na(signal), signal := median.chr]
-
   min.cov <- min(m.vec[signal > 0]$signal, na.rm = T)
-
   m.vec[is.infinite(signal), signal := min.cov]
-  m.vec[signal == 0, signal := min.cov]
   m.vec[signal < 0, signal := min.cov]
-
-  if (use.blacklist) {
-    m.vec$blacklisted <- blacklist
-    m.vec[blacklisted == TRUE, signal := NA]
-    m.vec <- na.omit(m.vec)
-  }
-
+  m.vec[signal == 0, signal := min.cov]
   m.vec[, signal := log(signal)]
-
+  
   return(dt2gr(m.vec))
 }
+
 
 collapse_cov <- function(cov.gr, bin.size = target_resolution, this.field = field) {
   BINSIZE.ROUGH <- bin.size
@@ -332,11 +350,14 @@ validate_pon_paths <- function(pon_paths, field, target_resolution, cores, all.c
 
   rebin <- bin.sizes != target_resolution
 
+  if (rebin){
+    message("Rebinning")
+  }
+  
   file.reads <- pbmcapply::pbmcmapply(function(nm, path, rebin){
     cov.gr <- readRDS(path) %>% gr.nochr()
     og.resolution <- median(width(cov.gr), na.rm = TRUE)
     if (rebin) {
-      message(sprintf("Rebinning %s (%d bp) to %d bp ...", nm, og.resolution, target_resolution))
       cov.gr <- collapse_cov(cov.gr, this.field = field, bin.size = target_resolution)
     }
     return(cov.gr) 
