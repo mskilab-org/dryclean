@@ -37,6 +37,20 @@ test_that("prep_cov", {
 })
 
 
+test_that("validate_pon_paths", {
+  ## regression: the "Rebinning" message tested the per-sample logical vector `rebin`
+  ## directly with if(), which throws "the condition has length > 1" for every PON
+  ## built from more than one normal sample
+  paths = c(sample.1.path, sample.2.path)
+  pon_files = dryclean:::validate_pon_paths(paths, field = "reads.corrected", target_resolution = 3, cores = 1)
+  expect_equal(length(pon_files), length(paths))
+
+  ## a single sample was never affected
+  pon_files = dryclean:::validate_pon_paths(sample.1.path, field = "reads.corrected", target_resolution = 3, cores = 1)
+  expect_equal(length(pon_files), 1)
+})
+
+
 test_that("apg_project", {
   m.vec = readRDS(m.vec.path)
   U = readRDS(U.path)
