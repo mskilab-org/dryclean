@@ -350,7 +350,8 @@ validate_pon_paths <- function(pon_paths, field, target_resolution, cores, all.c
 
   rebin <- bin.sizes != target_resolution
 
-  if (rebin){
+  ## rebin is one flag per sample, so it has to be collapsed before the if()
+  if (any(rebin)){
     message("Rebinning")
   }
   
